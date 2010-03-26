@@ -1,4 +1,4 @@
-{% load cardbox_extras %}
+{% load cardbox_filters %}
 <div id="card-{{box.key.id}}-{{card.key.name}}">
     {% include 'card.html' %}
    
@@ -8,19 +8,20 @@
     </form>
     
     <div class='card-meta' style='display:none'>
-        <h4>this card</h4>
+        <h4>This Card</h4>
         <ul>
             <li>correct: {{card.n_correct}}</li>
             <li>wrong: {{card.n_wrong}}</li>
             <li>interval: {{card.interval}}</li>
             <li>last studied: {{card.last_studied|date}}</li>
             <li>learned until: {{card.learned_until|date}}</li>
+            <li>factsheet: {{card.get_cardset|from_datastore:"factsheet"|page_name}}</li>
             <li>id: {{card.key.name}}</li>
         </ul>
     </div>
     
     <div class='box-meta' style='display:none'>
-        <h4>this box</h4>
+        <h4>This Box</h4>
         <p>total time studied: {{box.time_studied|timedelta}}</p>
         <div class='progressbar'>
             <span>{{box.percentage_learned|floatformat}}%</span>

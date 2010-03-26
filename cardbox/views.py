@@ -159,7 +159,7 @@ def update_card(request,box_id):
     correct = request.POST['correct'] == 'true'
     box = get_by_id_or_error(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
     studied_card = models.Card.get_by_key_name(card_id, parent=box)
-    studied_card.update(correct)
+    studied_card.answered(correct)
     return HttpResponse('success')
 
 @login_required

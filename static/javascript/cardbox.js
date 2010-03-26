@@ -257,6 +257,7 @@ function flipCard(card){
  * Submits the form to record correct/wrong score of card
  */
 function sendCard(correct){
+    if (window.cardqueue.length == 0) return;
     $$('#card-to-study form .correct').set('value', String(correct))
     $$('#card-to-study form').send()
     if(correct){

@@ -63,8 +63,7 @@ class Page(db.Model):
         if not prefix:
             nm = nm.split(':')[1]
         nm = nm.replace(':',': ')
-        nm = nm.replace('_',' ')
-        nm = ' '.join([w.capitalize() for w in nm.split(' ')])
+        nm = ' '.join([w.capitalize() for w in nm.split('_')])
         return nm
         
     def edit(self, new_content):
@@ -363,12 +362,28 @@ class Box(db.Model):
         return (1-(n_available/float(n_cards)))*100.0
         
     def card_to_study(self):
-        available = Card.all().ancestor(self)
-        available.filter('learned_until <', datetime.datetime.now())
-        results = list(available.filter('enabled',True).fetch(100))
-        if len(results) == 0:
+        study_set_size = 10
+        study_set = Card.all().ancestor(self)
+        study_set.filter('in_study_set',True)
+        study_set.filter('enabled',True)
+        study_set = list(study_set.fetch(study_set_size))
+        if len(study_set) < study_set_size/2:
+            available = Card.all().ancestor(self)
+            available.filter('enabled',True)
+            available.filter('learned_until <', datetime.datetime.now())
+            available = filter(lambda x: not x.in_study_set, list(available.fetch(100)))
+            refill = random.sample(available,min(len(available),study_set_size))
+            for c in refill:
+                c.in_study_set = True
+                c.put()
+            study_set.extend(refill)
+        #Return first available card.
+        if len(study_set) == 0:
             return Card.all().ancestor(self).order('learned_until').filter('enabled',True).get()
-        return random.choice(results)
+        study_set.sort(key=lambda x: x.last_studied)
+        next_card = random.choice(study_set[:len(study_set)//2+1])
+        next_card.studied()
+        return next_card
     
     def all_card_ids(self):
         a = []
@@ -386,8 +401,10 @@ class Box(db.Model):
 
                     
 class Card(db.Model):
+    cardset = db.ReferenceProperty(Cardset)
     modified = db.DateTimeProperty(auto_now=True)
     enabled = db.BooleanProperty(default=True)
+    in_study_set = db.BooleanProperty(default=False)
     last_correct = db.DateTimeProperty(default=datetime.datetime(2010,1,2))
     last_studied = db.DateTimeProperty(default=datetime.datetime(2010,1,1))
     learned_until = db.DateTimeProperty(default=datetime.datetime(2010,1,2))
@@ -396,13 +413,14 @@ class Card(db.Model):
     n_wrong = db.IntegerProperty(default=0)
     history = db.TextProperty(default='')
     
-    def update(self, correct=False):
+    def answered(self, correct=False):
         """ Update the card with correct/wrong stats."""
         def txn():
             if correct:
                 self.last_correct = now
                 self.n_correct += 1
                 self.interval += 1
+                self.in_study_set = False
             else:
                 self.n_wrong += 1
                 self.interval -= 1
@@ -422,12 +440,21 @@ class Card(db.Model):
         db.run_in_transaction(txn)
         box.update_time_studied()
         
+    def studied(self):
+        self.last_studied = datetime.datetime.now().replace(microsecond=0)
+        self.put()
+        
+    def get_cardset(self):
+        if not self.cardset:
+            self.cardset = Cardset.get_by_id(int(self.key().name().split('-',1)[0]))
+        return self.cardset
+        
     def learned(self):
         return self.learned_until > datetime.datetime.now()
         
     def rendered(self):
         if not hasattr(self, '_rendered'):
-            self._rendered = self.parent().render_card(self.key().name().split('-'))
+            self._rendered = self.parent().render_card(self.key().name().split('-',1))
         return self._rendered
 
 

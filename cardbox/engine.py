@@ -134,6 +134,11 @@ def update_cards(card_ids, box):
     
 
 class CardCleaner(Mapper):
+    """ Runs through all the cards in a given box (ancestor),
+        and checks whether the card is still part of that box.
+        At the end, the remaining cards that should be in the box but are not
+        will be added by calling create_cards()
+    """
     KIND = models.Card
     
     def __init__(self, card_ids=None, **kwds):
@@ -144,7 +149,7 @@ class CardCleaner(Mapper):
         box = card.parent()
         if box is None:
             return ([],[card])
-        a,b = card.key().name().split('-')
+        a,b = card.key().name().split('-',1)
         id_tuple = (int(a),b)
         if (id_tuple[0] not in box.cardsets) or (id_tuple not in self.card_ids):
             if card.history == '':
@@ -168,8 +173,10 @@ class CardCleaner(Mapper):
         else:
             logging.info("CardCleaner finished. No cards to add.")
                 
-#TODO: Write some comments
 def create_cards(card_ids, box_key):
+    """ Adds Card entities for the given ids, with the given parent.
+        Adds in batches and re-queues itself. 
+    """
     if len(card_ids) == 0:
         return
     BATCH_SIZE = 20

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block pageid %}page-page{%endblock%}
+
+{% block content %}
+    <div class="span-24 last">
+        <span class='pill'>
+            <a href='{% url cardbox.views.page_view page.key.name %}' {% if not editable %}class='current'{%endif%}>view</a> | 
+            <a href='{% url cardbox.views.page_edit page.key.name %}' {% if editable %}class='current'{%endif%}>edit</a>
+        </span>
+        <h3>{{page.name}}</h3>
+        <p>revision: {{page.revision_number}}</p>
+        {% if editable %}
+        <form action="{% url cardbox.views.page_edit page.key.name %}" method="post">
+        {%endif%}
+            <textarea name='content' {%if not editable%}readonly='true'{%endif%} style="width:938px; font-family:Monaco,Courier,monospace">{{page.source}}</textarea>
+            {% for error in page.errors %}
+                <div class='error'>
+                    <h5>{{error.message}}</h5>
+                    <pre>{{error.content}}</pre>
+                </div>
+            {% endfor %}
+            {%if editable %}
+                <p><input type="submit" value="Save Changes"/></p>
+            {%endif%}
+        </form>
+    </div>
+    <div class="span-24 last">
+        {{page.html_preview}}
+    </div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% load cardbox_extras %}
+<div id="card-{{box.key.id}}-{{card.key.name}}">
+    {% include 'card.html' %}
+   
+    <form action="{% url cardbox.views.update_card box.key.id %}" method="post">
+        <input class='card_id' type="hidden" name="card_id" value="{{card.key.name}}"/>
+        <input class='correct' type="hidden" name="correct" value="0"/>
+    </form>
+    
+    <div class='card-meta' style='display:none'>
+        <h4>this card</h4>
+        <ul>
+            <li>correct: {{card.n_correct}}</li>
+            <li>wrong: {{card.n_wrong}}</li>
+            <li>interval: {{card.interval}}</li>
+            <li>last studied: {{card.last_studied|date}}</li>
+            <li>learned until: {{card.learned_until|date}}</li>
+            <li>id: {{card.key.name}}</li>
+        </ul>
+    </div>
+    
+    <div class='box-meta' style='display:none'>
+        <h4>this box</h4>
+        <p>total time studied: {{box.time_studied|timedelta}}</p>
+        <div class='progressbar'>
+            <span>{{box.percentage_learned|floatformat}}%</span>
+            <div style='width:{%widthratio box.percentage_learned 100 180%}px;'></div>
+        </div>
+    </div>
+</div>

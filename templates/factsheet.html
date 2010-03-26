@@ -1,0 +1,10 @@
+<table><tbody>
+{% for row_id, row in rows.items %}
+<tr>
+    {% for k,v in row.items %}
+    <td>{{k}}: {{v}}</td>
+    {% endfor %}
+</tr>
+{% endfor %}
+</tbody>
+</table>

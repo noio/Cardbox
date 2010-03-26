@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="span-24 last">
+        {% if box.is_saved %}
+        <form action="{% url cardbox.views.box_edit box.key.id %}" method="post">
+        {% else %}
+        <form action="{% url cardbox.views.box_new %}" method="post">
+        {% endif %}
+            <input id="id_title" type="text" class="title" value="{{box.title}}" name="title">
+            <input id="id_cardsets" type="hidden" value='{{box.cardsets|join:","}}' name='cardsets'>
+            <h4>selected sets:</h4> 
+            <div class='span-24' id='browser_selected'>
+            </div>
+            <h4>available sets:</h4>
+            <div class='span-24' id='browser_available'>
+            </div>
+            <script>
+                selectedBrowser = new BrowseTable('browser_selected',{
+                    {%if box.is_saved%}'filters':{'box':{{box.key.id}} },{%endif%}
+                    'kind':'cardset',
+                    'actions':['remove']
+                });
+                selectedBrowser.addEvent('action_remove',function(id){
+                    selectedBrowser.removeRow(id);
+                    $('id_cardsets').set('value',selectedBrowser.getRowIds().join(','));
+                });
+                {%if box.is_saved %}selectedBrowser.refresh();{% endif %}
+                availableBrowser=new BrowseTable('browser_available',{
+                    'kind':'cardset',
+                    'actions':['add']
+                });
+                availableBrowser.addEvent('action_add',function(id){
+                    selectedBrowser.addRow(availableBrowser.getRowData(id));
+                    $('id_cardsets').set('value',selectedBrowser.getRowIds().join(','));
+                });
+                availableBrowser.refresh();
+            </script>
+            
+            <p><input type="submit" value="Save Changes"/></p>
+        </form>
+    </div>
+{% endblock %}

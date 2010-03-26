@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="span-24 last">
+        <span class='pill'>
+            <a href='{% url cardbox.views.cardset_view cardset.key.id %}' class='current'>view</a> | 
+            <a href='{% url cardbox.views.cardset_edit cardset.key.id %}'>edit</a>
+        </span>
+        <h3>{{cardset.title}}</h3>
+        <br/>
+   
+        <div class='span-24'>
+                {# TODO: Django tag for retrieving key without fetch #}
+                <p><strong>factsheet: </strong>
+                    <a href="{%url cardbox.views.page_view cardset.factsheet.key.name%}">
+                        {{cardset.factsheet.key.name|cut:"factsheet:"}}
+                    </a><br/>
+                    <strong>template: </strong>
+                    <a href="{%url cardbox.views.page_view cardset.template.key.name %}">
+                        {{cardset.template.key.name|cut:"template:"}}
+                    </a>
+                </p>
+        <h4>preview (front/back)</h4>
+            <div class='span-24 splitview'>
+                {% with cardset.random_card as card %}
+                    {%include 'card.html' %}
+                {%endwith%}
+            </div>
+        </div>
+    </div>
+{% endblock %}

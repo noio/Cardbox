@@ -1,0 +1,27 @@
+application: card-box
+version: 0-1-4
+runtime: python
+api_version: 1
+
+handlers:
+
+### SYSTEM HANDLERS ###
+- url: /_ah/queue/deferred
+  script: $PYTHON_LIB/google/appengine/ext/deferred/deferred.py
+
+- url: /remote_api
+  script: $PYTHON_LIB/google/appengine/ext/remote_api/handler.py
+  login: admin
+
+### STATIC HANDLERS ###
+- url: /favicon.ico
+  static_files: static/theme/favicon.ico
+  upload: static/theme/favicon.ico
+
+- url: /static
+  static_dir: static
+
+### DYNAMIC PAGES ###
+- url: /.*
+  script: main.py
+

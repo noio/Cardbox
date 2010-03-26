@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="span-12">
+        <span class='pill'>
+            <a href='#'>box</a> | 
+            <a href='#'>cardset</a> |
+            <a href='#'>factsheet</a> |
+            <a href='#'>template</a>
+        </span>
+        <div class='section'>
+            <h4>Create a New Box</h4>
+            <p>Click below to create a new box.</p>
+            <input type='button' value='Create Box' onClick='document.location="{% url cardbox.views.box_new %}"'></p>
+        </div>
+        <hr/>
+        <div class='section'>
+            <h4>Create a New Cardset</h4>
+            <p>Click below to create a new cardset.</p>
+            <input type='button' value='Create Cardset' onClick='document.location="{% url cardbox.views.cardset_new %}"'></p>
+        </div>
+        <hr/>
+        <div class='section'>
+            <h4>Create a New Factsheet</h4>
+            <form>
+                <p>Please enter a title for the new factsheet. Titles can contain letters, numbers and spaces. Please note that the title cannot be changed later.</p>
+                <p><input class='title' alt='enter title' id='id_factsheet_title' type='text' value='Enter Title'/>
+                <input type='button' value='Create Factsheet' onClick='createPage("factsheet",$("id_factsheet_title").get("value"));'></p>
+            </form>        
+        </div>
+        <hr/>
+        <div class='section'>
+            <h4>Create a New Template</h4>
+            <form>
+                <p>Please enter a title for the new template. Titles can contain letters, numbers and spaces. Please note that the title cannot be changed later.</p>
+                <p><input class='title' alt='enter title' id='id_template_title' type='text' value='Enter Title'/>
+                <input type='button' value='Create Template' onClick='createPage("template",$("id_template_title").get("value"));'></p>
+            </form>
+        </div>
+        
+        <script type='text/javascript'>
+            createPage = function(type, title){
+                title = title.toLowerCase();
+                title = title.replace(/\s+/,'_');
+                document.location = '/edit/'+type+':'+title;
+            }
+            window.addEvent('domready',function(){
+                var accordion = new Fx.Accordion($$('.pill a'), $$('.section'),{'display':-1});
+                accordion.addEvent('active',function(toggler, element){
+                    $$('.pill a').removeClass('current');
+                    toggler.addClass('current');
+                });
+            });
+        </script>
+        
+    </div>
+{% endblock %}

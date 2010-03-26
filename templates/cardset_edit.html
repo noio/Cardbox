@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="span-24 last">
+        <span class='pill'>
+            {%if cardset.is_saved %}
+                <a href='{% url cardbox.views.cardset_view cardset.key.id %}'>view</a> | 
+            {% else %}
+                not saved |
+                {% endif %}
+            <a href='#' class='current'>edit</a>
+        </span><br/>
+        {% if cardset.is_saved %}
+        <form action="{% url cardbox.views.cardset_edit cardset.key.id %}" method="post">
+        {% else %}
+        <form action="{% url cardbox.views.cardset_new %}" method="post">
+        {% endif %}
+            <input id='id_title' type='text' class='title' name='title' value='{{cardset.title}}'>
+            <div class='span-24'>
+                <div class='span-12'>
+                    <p><label for='id_factsheet'>factsheet:</label>
+                    <input id='id_factsheet' type='text' name='factsheet' value='{{cardset.factsheet.key.name}}'>
+                    <a href='#' onClick='bsr.update({"kind":"factsheet"}); return false;'>browse</a></p>
+                </div>
+                <div class='span-12 last'>
+                    <p><label for='id_template'>template:</label>
+                    <input id='id_template' type='text' name='template' value='{{cardset.template.key.name}}'>
+                    <a href='#' onClick='bsr.update({"kind":"template"}); return false;'>browse</a></p>
+                </div>
+                
+                {#TODO: Update mapper values on factsheet select #}
+                <div class='span-24' id='browser'>
+                </div>
+               
+                <script type='text/javascript'>
+                    bsr=new BrowseTable('browser');
+                    bsr.addEvent('action_select',function(id){
+                        if(bsr.options.kind=='factsheet'){
+                            $('id_factsheet').set('value',id);
+                            msr.setValues(bsr.getNamedRowData(id)['columns'].split(','))
+                        }else if (bsr.options.kind=='template'){
+                            $('id_template').set('value',id);
+                            msr.setTemplate(bsr.getNamedRowData(id)['id'])
+                        }
+                    });
+                    $('id_factsheet').addEvent('focus',function(){
+                        bsr.update({'kind':'factsheet'});
+                    });
+                    $('id_template').addEvent('focus',function(){
+                        bsr.update({'kind':'template'});
+                    });
+                </script>
+                
+                <div class='span-24'>
+                    <input id='id_mapping' type='hidden' name='mapping' value='{{cardset.mapping_as_json}}'/>
+                    <h4>select mapping:</h4>
+                    <div id='mapper' class='splitview'>
+                        {{cardset.template.html_preview}}
+                    </div>
+                    <script type='text/javascript'>
+                        msr = new MappingSelector('mapper','id_mapping');
+                        msr.setValues(['{{cardset.factsheet.columns|join:"','"}}'])
+                    </script>
+                </div>
+                
+                <p><input type="submit" value="Save Changes"/></p>
+            </div>
+        </form>
+    </div>
+{% endblock %}

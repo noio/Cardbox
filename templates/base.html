@@ -1,0 +1,58 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<title>{% block title %}cardbox{% endblock %}</title>
+	<link rel="stylesheet" href="{{media_url}}theme/base.css" type="text/css" media="screen" charset="utf-8"/>
+	<link rel="stylesheet" href="{{media_url}}theme/style.css" type="text/css" media="screen" charset="utf-8"/>
+	
+	<script src="http://www.google.com/jsapi" type="text/javascript"></script>
+    <script src="{{media_url}}javascript/mootools-1.2.4-core.js" type="text/javascript" charset="utf-8"></script>
+    <script src="{{media_url}}javascript/mootools-1.2.4.4-more.js" type="text/javascript" charset="utf-8"></script>
+    <script src="{{media_url}}javascript/cardbox.js" type="text/javascript" charset="utf-8"></script>
+</head>
+
+<body id='{% block pageid %}{%endblock%}'>
+    <div id='header'>
+        <div class='container'> 
+            {% block header %}
+        
+            <div class='span-6'>
+    	        <h1><a href="/" id='logo'>cardbox</a></h1>
+    	    </div>
+	
+    	    <div class='span-12'>
+    	        <ul id='navbar'>
+        	        <li><p>Welcome{%if user %}, {{user.nickname}} {%endif%}</p></li>
+        	        <li><a href="{% url cardbox.views.create %}">create</a></li>
+        	        <li><a href="{% url cardbox.views.browse %}">browse</a></li>
+        	        <li>
+        	            {% if sign_in %}<a href="{{ sign_in }}">login</a>
+        	            {% else %}<a href="{{ sign_out }}">logout</a>
+        	            {% endif %}
+        	        </li>
+    	        
+        	         {%if is_admin %}
+                    
+                    {% endif %}
+                </ul>
+            </div>
+    	    <div class='span-6 last' id='shortcuts'>
+    	        <ul></ul>
+    	    </div>
+    	    {% endblock header %} 
+    	</div>
+	</div>
+	
+    <div class='container'>
+        
+        {% block content %}
+        
+        <p>{{ message }}</p>
+        
+        {%endblock content %}
+    </div>
+    
+</body>
+</html>

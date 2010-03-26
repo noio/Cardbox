@@ -1,0 +1,93 @@
+/***** DEFINITIONS *****/
+@background:                        #f0f0f0;
+@color:                             #403C3B;
+@alt_background:                    @color;
+@alt_color:                         @background;
+@accent:                            #315875;
+@link_blue:                         @accent;
+@passive:                           #AEE36D;
+@active:                            #BF6F8C;
+
+/***** LAYOUT *****/
+
+#header                             {height: 54px; width: 100%; margin-bottom: 1em;
+                                     background: @alt_background; 
+                                     border-bottom: 6px solid @accent; }
+#header h1                          {margin: 0;}
+  #logo                             {display: block; text-indent: -9999px;
+                                     height: 60px; width: 200px; background: url('logo.png');
+                                     margin: 0px;}
+
+#navbar                             {padding: 0; }
+#navbar li                          {height: 60px; float: left;
+                                     list-style:none;}
+  #navbar li *                      {display: block; height: 21px;
+                                     padding: 33px 5px 0; color: @alt_color;
+                                     border-right: 1px solid (@alt_color - #999999);}
+  #navbar li a:hover                {background: (@alt_color - #999999);}
+                                
+
+/***** STYLES *****/            
+body                                {background: url('header-bg.png') repeat-x top @background;
+                                     color: @color;}
+a                                   {color: @link_blue;}                   
+a.current                           {font-weight: bold; color: black; text-decoration: none;}
+                                
+/***** ELEMENTS *****/          
+
+.pill                               {background: @alt_background; color: @alt_color; display: inline-block;
+                                     padding: 0 1em; margin-bottom: 1em; border: 2px solid (@alt_background - #333333); border-radius: 1em;}
+    .pill a                         {color: @link_blue + #666;}
+    .pill a:hover, .pill a.current  {color: @alt_color;}
+                                
+.browser                            {max-height: 400px; overflow-y: scroll; line-height: 1.5;}
+    .browser table th               {background: @background - #222;}
+    .browser table thead            {cursor: pointer;}
+    .browser .table-tr-hovered      {background: @accent + #666;}
+                                
+.mapper .card .tfield               {border: 2px dashed #333;}
+    .mapper .card select            {margin: 0 6px; position: relative; bottom: 5px;}
+                                
+#shortcuts ul                       {list-style:none; margin: 0;}
+    #shortcuts li                   {float: right; color: #ccc;}
+.key                                {color: #666; padding: 0 3px; margin: 0 4px;
+                                     background: #ccc; border-radius: 3px;}
+                                
+.card                               {width: 470px;}
+    .card .front, .card .back       {border: 2px solid #666;
+                                     height: 210px; width: 426px;
+                                     padding: 20px;}
+    .card p.flip                    {text-align: right;}
+    .splitview .card                {width: 100%;}
+    .splitview .card div            {float: left;}
+    .splitview .card div.front      {margin-right: 10px;} 
+                                
+                                
+.button-wrong, .button-correct      {display: block; float: left; 
+                                     width: 100px; padding: 7px 0; 
+                                     text-align: center;
+                                     border: 1px solid #666; border-radius: 5px;}
+.button-wrong                       {float: right;}
+                                
+                                
+.cardsets ul                        {padding: 10px; border: 1px dashed #aaa;}
+.cardsets ul li                     {float: left; display: block; 
+                                     width: 240px; height: 135px; 
+                                     margin: 5px; 
+                                     position: relative;}
+.cardsets ul li span                {position: absolute; top: 70px; z-index: 2; 
+                                     width: 230px; height: 52px; padding: 5px;
+                                     background: #E9F3E9;
+                                     border: 1px solid #737873; border-radius: 3px;}
+.cardsets ul li h6 a                {float: right; display: block;}
+.cardsets ul li .card               {position: absolute; left: 3px; top: 5px;
+                                     z-index: 1;}
+                                
+                                
+.progressbar                        {position:relative; width: 180px; height: 12px;
+                                     text-align: center; line-height: 14px; margin-bottom: 20px;
+                                     background: #efefef; border: 2px solid #666; border-radius: 8px;}
+.progressbar span                   {z-index: 3; position: relative;}
+.progressbar div                    {z-index: 2; position: absolute; top: -1px; left: -1px;
+                                     height: 12px;
+                                     background: #AEE36D; border:1px solid #666; border-radius: 8px;}

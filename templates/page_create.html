@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block pageid %}page-page{%endblock%}
+
+{% block content %}
+    <div class='span-24'>
+        {%if error %}<p class='error'>{{error}}</p>{%endif%}
+        <form class='inline' action='{% url cardbox.views.page_create pagetype %}' method="post">
+            <div class="span-24">
+                Create a <strong>{{pagetype}}</strong> titled:
+            </div>
+            <div class='span-24'>
+                <input type='text' class='title' name='title' value='title'/>
+            </div>
+            <p>Please note that the title cannot be changed later.</p>
+            <p><input type="submit" value="Create"/></p>
+        </form>
+    </div>
+{% endblock %}

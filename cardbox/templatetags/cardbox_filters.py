@@ -7,7 +7,8 @@ register = template.Library()
 def timedelta(value):
     "Formats a timedelta object"
     minutes = value.seconds/60.0
-    return "%d hours, %d minutes"%(minutes//60, minutes%60)
+    hours = value.days*24 + minutes//60
+    return "%d hours, %d minutes"%(hours, minutes%60)
 
 @register.filter
 def from_datastore(value, arg):

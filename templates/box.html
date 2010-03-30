@@ -5,7 +5,7 @@
         {% if box.is_saved %}
         <form action="{% url cardbox.views.box_edit box.key.id %}" method="post">
         {% else %}
-        <form action="{% url cardbox.views.box_new %}" method="post">
+        <form action="{% url cardbox.views.box_create %}" method="post">
         {% endif %}
             <input id="id_title" type="text" class="title" value="{{box.title}}" name="title">
             <input id="id_cardsets" type="hidden" value='{{box.cardsets|join:","}}' name='cardsets'>

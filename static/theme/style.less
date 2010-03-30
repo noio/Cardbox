@@ -5,7 +5,7 @@
 @alt_color:                         @background;
 @accent:                            #315875;
 @link_blue:                         @accent;
-@passive:                           #AEE36D;
+@passive:                           #94c15d;
 @active:                            #BF6F8C;
 
 /***** LAYOUT *****/
@@ -14,17 +14,34 @@
                                      background: @alt_background; 
                                      border-bottom: 6px solid @accent; }
 #header h1                          {margin: 0;}
-  #logo                             {display: block; text-indent: -9999px;
+    #logo                           {display: block; text-indent: -9999px;
                                      height: 60px; width: 200px; background: url('logo.png');
                                      margin: 0px;}
 
-#navbar                             {padding: 0; }
+/***** NAVBAR *****/
+#navbar                             {height: 54px; border-left: 1px solid (@alt_color - #999999);}
+#navbar, #navbar ul, #subMenusContainer ul{padding: 0; margin: 0; display: block; 
+                                     background: @alt_background; color: @alt_color;}
 #navbar li                          {height: 60px; float: left;
                                      list-style:none;}
-  #navbar li *                      {display: block; height: 21px;
-                                     padding: 33px 5px 0; color: @alt_color;
-                                     border-right: 1px solid (@alt_color - #999999);}
-  #navbar li a:hover                {background: (@alt_color - #999999);}
+    #navbar li a                    {display: block; height: 21px;
+                                     padding: 33px 20px 0; color: @alt_color;
+                                     border-right: 1px solid (@alt_color - #999999);
+                                     text-decoration: none; font-family: Helvetica, Verdana, Tahoma Arial; font-size: 14px; text-transform: uppercase;}
+    #subMenusContainer a            {display:block; padding:6px 20px;
+                                     text-decoration:none; color: @alt_color; border-top: 1px solid @alt_color;}
+    #subMenusContainer a:hover, 
+    #subMenusContainer a:focus, 
+    #navbar a.mainMenuParentBtnFocused, 
+    #subMenusContainer a.subMenuParentBtnFocused,
+    #navbar li a:hover,
+    #navbar li a:focus              {background-color: (@alt_color - #999999); color:#FFF;}
+    /* Submenu Outer Wrapper - each submenu is inside a div with this class */
+    .smOW                           {display:none; position: absolute; overflow:hidden; 
+                                     padding:0 2px; margin:0 0 0 -2px;}
+    #subMenusContainer              {display:block; position:absolute; top:0; left:0; width:100%; height:0; overflow:visible; z-index:1000000000;}
+
+  
                                 
 
 /***** STYLES *****/            
@@ -90,4 +107,4 @@ a.current                           {font-weight: bold; color: black; text-decor
 .progressbar span                   {z-index: 3; position: relative;}
 .progressbar div                    {z-index: 2; position: absolute; top: -1px; left: -1px;
                                      height: 12px;
-                                     background: #AEE36D; border:1px solid #666; border-radius: 8px;}
+                                     background: @passive; border:1px solid #666; border-radius: 8px;}

@@ -2,18 +2,18 @@
 
 {% block content %}
   
-<div class='span-24'>
-    <span class='pill'>
-        <a href='#' onClick='bsr.update({"kind":"factsheet"}); $$(".current").removeClass("current"); this.addClass("current"); return false;'>factsheets</a> |
-        <a href='#' onClick='bsr.update({"kind":"template"}); $$(".current").removeClass("current"); this.addClass("current"); return false;'>templates</a> |
-        <a href='#' onClick='bsr.update({"kind":"scheduler"}); $$(".current").removeClass("current"); this.addClass("current"); return false;'>schedulers</a> |
-        <a href='#' onClick='bsr.update({"kind":"cardset"}); $$(".current").removeClass("current"); this.addClass("current"); return false;'>cardsets</a>
-    </span>
-</div>
 <div class='span-24' id='browser'>
 </div>
 <script>
+    setKind = function(k){
+        $$('.current').removeClass('current');
+        $$('.pill .'+k).addClass('current');
+        bsr.update({'kind':k});
+    }
     bsr=new BrowseTable('browser');
+    if (window.location.hash){
+        setKind(unescape(window.location.hash.substring(1)));
+    }
 </script>
      
 {% endblock %}

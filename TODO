@@ -1,10 +1,14 @@
 FEATURES
 ========
 CHANGED: Progressive set learning
+TODO: Filtering for browser
 
 INTERFACE
 =========
+TODO: First time visit notifications
 TODO: picker for scheduler
+TODO: Meta data for pages
+TODO: Changeable name on page-creation page
 CHANGED: Mapping makkelijker invoeren.
 CHANGED: total time studied for each box
 CHANGED: Queue the cards to learn to avoid page loading time.
@@ -13,6 +17,6 @@ BACK END
 ========
 CHANGED: Fix firefox
 CHANGED: Create cleaner for cardprogress entities
-FIXME: Cards repeating
+CHANGED: Cards repeating
 CHANGED: Betere organisatie voor keyboard shortcuts en indicators
 CHANGED: Empty template spots with &nbsp;

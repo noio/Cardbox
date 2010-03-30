@@ -172,24 +172,24 @@ var MappingSelector = new Class({
 function startStudy(box_id){
     window.box_id = box_id;
     $('card-to-study').spin({'message':"Loading cards..."});
-    extendCardQueue();
+    extendCardStack();
 }
 
 /**
  * Adds request to receive a new card. Repeats until queue is full.
  */
-function extendCardQueue(){
-    if (typeof window.cardqueue=='undefined'){
-        window.cardqueue = [];
+function extendCardStack(){
+    if (typeof window.cardstack=='undefined'){
+        window.cardstack = [];
     }
-    if (window.cardqueue.length < 4){
+    if (window.cardstack.length < 4){
         var rq = new Request.HTML().get('/next_card/'+window.box_id);
         rq.addEvent('success',function(t,e,h,js){
-            window.cardqueue.push(t);
+            window.cardstack.push(t);
             if( $('card-to-study').getElements('.card').length == 0 ){
-                shiftCardQueue();
+                popCardStack();
             }
-            extendCardQueue();
+            extendCardStack();
         });
     }
 }
@@ -197,9 +197,9 @@ function extendCardQueue(){
 /**
  * Replaces currend card by head in queue. Does not extend queue
  */
-function shiftCardQueue(){
-    if (window.cardqueue.length == 0) return;
-    nxt = window.cardqueue.shift();
+function popCardStack(){
+    if (window.cardstack.length == 0) return;
+    nxt = window.cardstack.pop();
     $('card-to-study').empty();
     $('card-meta').empty();
     $('box-meta').empty();
@@ -208,7 +208,7 @@ function shiftCardQueue(){
     $('card-meta').adopt($$('#card-to-study .card-meta > *'));
     $('box-meta').adopt($$('#card-to-study .box-meta > *'));
     activateCard($$('#card-to-study .card')[0]);
-    extendCardQueue();
+    extendCardStack();
 }
 
 /**
@@ -257,7 +257,7 @@ function flipCard(card){
  * Submits the form to record correct/wrong score of card
  */
 function sendCard(correct){
-    if (window.cardqueue.length == 0) return;
+    if (window.cardstack.length == 0) return;
     $$('#card-to-study form .correct').set('value', String(correct))
     $$('#card-to-study form').send()
     if(correct){
@@ -265,7 +265,7 @@ function sendCard(correct){
     } else {
         $$('.button-wrong').highlight('#BF6F8C')
     }
-    shiftCardQueue();
+    popCardStack();
 }
 
 function bindKey(name, shortcut){

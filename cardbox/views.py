@@ -81,6 +81,20 @@ def frontpage(request):
     """
     factsheets = models.Factsheet.all().order('-modified').fetch(10)
     return respond(request,'front.html', {'factsheets':factsheets})
+    
+def page_create(request, pagetype):
+    if pagetype not in ['factsheet','template','scheduler']:
+        return HttpResponseForbidden('Type not recognized')
+    if request.method != 'POST':
+        return respond(request, 'page_create.html',{'pagetype':pagetype})
+        
+    title = request.POST['title']
+    name = re.sub(r'\s+','_',title.lower())
+    p = models.Page.get_by_name(name)
+    if p is None:
+        error = 'Invalid name. Please use only A-Z, 0-9 and spaces.'
+        return respond(request, 'page_create.html',{'pagetype':pagetype,'error':error})
+    return HttpResponseRedirect(reverse('cardbox.views.page_edit',args=[p.key().name()]))
 
 def page_view(request, pagename):
     fs = models.Page.get_by_name(pagename)
@@ -104,7 +118,7 @@ def page_revision(request, pagename, revision):
     return respond(request,'page.html',{'page':fs})
 
 @login_required
-def cardset_new(request):
+def cardset_create(request):
     return cardset_edit(request)
     
 def cardset_view(request, set_id):
@@ -131,7 +145,7 @@ def template_preview(request, template_name):
     return HttpResponse(template.html_preview())
 
 @login_required
-def box_new(request):
+def box_create(request):
     return box_edit(request)
 
 @login_required
@@ -141,7 +155,7 @@ def box_edit(request, box_id=None):
         box.title = request.POST['title']
         box.cardsets = [int(x) for x in request.POST['cardsets'].split(',') if x != '']
         box.put()
-        return HttpResponseRedirect(reverse('cardbox.views.box_edit',args=[box.key().id()]))
+        return HttpResponseRedirect(reverse('cardbox.views.frontpage'))
     
     cardsets = models.Cardset.all().fetch(1000)
     return respond(request, 'box.html',{'box':box, 'cardsets':cardsets})
@@ -170,12 +184,16 @@ def next_card(request, box_id):
     card = box.card_to_study()
     return respond(request, 'card_study.html',{'box':box,'card':card})
 
-def create(request):
-    return respond(request, 'create.html',{})
-
 def browse(request):
     #print request.GET.items()
     return respond(request, 'browse.html')
+    
+@login_required
+def card_view(request, box_id, card_id):
+    box = get_by_id_or_error(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
+    card = models.Card.get_by_key_name(card_id, parent=box)
+    print card.stats()
+    return respond(request, 'card_view.html', {'card':card})
     
 def browse_data(request,kind):
     if kind == 'factsheet':
@@ -220,6 +238,7 @@ def browse_data(request,kind):
         return HttpResponseForbidden('Kind not found.')
                   
     return HttpResponse(simplejson.dumps({'headers':headers,'rows':rows}))
+
 
 ### Helper functions ###
 

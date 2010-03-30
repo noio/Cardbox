@@ -3,6 +3,7 @@
 # Python Imports
 import re
 import datetime
+import time
 import yaml
 import random
 import logging
@@ -62,7 +63,7 @@ class Page(db.Model):
         nm = self.key().name()
         if not prefix:
             nm = nm.split(':')[1]
-        nm = nm.replace(':',': ')
+        nm = nm.replace(':',':_')
         nm = ' '.join([w.capitalize() for w in nm.split('_')])
         return nm
         
@@ -282,7 +283,7 @@ class Scheduler(Page):
               'last_correct':card.last_correct,
               'last_studied':card.last_studied,
               'interval':card.interval}
-        card.learned_until = eval(self.parsed(),gb,lc)
+        card.learned_until = eval(self.parsed(),gb,lc).replace(microsecond=0)
 
 class Cardset(db.Model):
     title = db.StringProperty(default='New Cardset')
@@ -427,10 +428,11 @@ class Card(db.Model):
             self.last_studied = now
             self.interval = min(12,max(1, self.interval))
             scheduler.reschedule(self)
-            log_line = yaml.dump({now:[int(self.n_correct), 
-                                       int(self.n_wrong), 
-                                       int(self.interval),
-                                       self.learned_until.isoformat(' ')]})
+            log_line = yaml.dump([[now,
+                                   int(self.n_correct), 
+                                   int(self.n_wrong), 
+                                   int(self.interval),
+                                   self.learned_until]])
             self.history += log_line
             self.put()
         
@@ -449,8 +451,40 @@ class Card(db.Model):
             self.cardset = Cardset.get_by_id(int(self.key().name().split('-',1)[0]))
         return self.cardset
         
-    def learned(self):
+    def is_learned(self):
         return self.learned_until > datetime.datetime.now()
+        
+    def stats(self, start_at=None, end_at=None):
+        RANGE = 100.0
+        timestamps = []
+        labels = []
+        intervals = []
+        learned_until = []
+        last_date = datetime.datetime(2010,1,1)
+        for line in self.history.split('\n'):
+            obj = yaml.load(line)
+            if obj:
+                obj = obj[0]
+                timestamps.append(time.mktime(obj[0].timetuple()))
+                if obj[0] - last_date > datetime.timedelta(days=3):
+                    labels.append(obj[0].strftime('%b %d'))
+                    last_date = obj[0]
+                else:
+                    labels.append('')
+                intervals.append(obj[3])
+                learned_until.append(time.mktime(obj[4].timetuple()))
+        if len(timestamps) < 2:
+            return {'timestamps':[],'labels':[],'intervals':[],'learned_ranges':[]}
+        first = min(timestamps)
+        span = max(timestamps)-first
+        timestamps = map(lambda x: ((x-first)/float(span)) * RANGE,timestamps)
+        learned_from = map(lambda x: x/RANGE,timestamps)
+        learned_until = map(lambda x: ((x-first)/float(span)),learned_until)
+        learned = zip(timestamps, learned_until)
+        return {'timestamps':timestamps,
+                'labels':labels,
+                'intervals':intervals,
+                'learned_ranges':['%s,%s'%s for s in zip(learned_from,learned_until)]}
         
     def rendered(self):
         if not hasattr(self, '_rendered'):

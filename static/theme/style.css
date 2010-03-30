@@ -14,20 +14,95 @@
   background: url('logo.png');
   margin: 0px;
 }
-#navbar { padding: 0; }
+#navbar {
+  height: 54px;
+  border-left: 1px solid #575757;
+}
+#navbar {
+  padding: 0;
+  margin: 0;
+  display: block;
+  background: #403c3b;
+  color: #f0f0f0;
+}
+#navbar ul {
+  padding: 0;
+  margin: 0;
+  display: block;
+  background: #403c3b;
+  color: #f0f0f0;
+}
+#subMenusContainer ul {
+  padding: 0;
+  margin: 0;
+  display: block;
+  background: #403c3b;
+  color: #f0f0f0;
+}
 #navbar li {
   height: 60px;
   float: left;
   list-style: none;
 }
-#navbar li * {
+#navbar li a {
   display: block;
   height: 21px;
-  padding: 33px 5px 0;
+  padding: 33px 20px 0;
   color: #f0f0f0;
   border-right: 1px solid #575757;
+  text-decoration: none;
+  font-family: Helvetica, Verdana, Tahoma Arial;
+  font-size: 14px;
+  text-transform: uppercase;
 }
-#navbar li a:hover { background: #575757; }
+#subMenusContainer a {
+  display: block;
+  padding: 6px 20px;
+  text-decoration: none;
+  color: #f0f0f0;
+  border-top: 1px solid #f0f0f0;
+}
+#subMenusContainer a:hover {
+  background-color: #575757;
+  color: #ffffff;
+}
+#subMenusContainer a:focus {
+  background-color: #575757;
+  color: #ffffff;
+}
+#navbar a.mainMenuParentBtnFocused {
+  background-color: #575757;
+  color: #ffffff;
+}
+#subMenusContainer a.subMenuParentBtnFocused {
+  background-color: #575757;
+  color: #ffffff;
+}
+#navbar li a:hover {
+  background-color: #575757;
+  color: #ffffff;
+}
+#navbar li a:focus {
+  background-color: #575757;
+  color: #ffffff;
+}
+.smOW {
+  display: none;
+  position: absolute;
+  overflow: hidden;
+  padding: 0 2px;
+  margin: 0 0 0 -2px;
+}
+#subMenusContainer {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  overflow: visible;
+  z-index: 1000000000;
+}
 body {
   background: url('header-bg.png') repeat-x top #f0f0f0;
   color: #403c3b;
@@ -160,7 +235,7 @@ a.current {
   top: -1px;
   left: -1px;
   height: 12px;
-  background: #aee36d;
+  background: #94c15d;
   border: 1px solid #666666;
   border-radius: 8px;
 }

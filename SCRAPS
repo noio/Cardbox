@@ -58,4 +58,24 @@
 </script>
 
 
- + ' <a href="%s" target="_blank">view</a>'%reverse('cardbox.views.page_view',args=[e.key().name()])
+ 
+ class CardHistoryRefactor(Mapper):
+
+     KIND = models.Card
+
+     def map(self, card):
+         h = card.history
+         new_h = ''
+         logging.info('original:\n%s'%h)
+         for line in h.split('\n'):
+             obj = yaml.load(line)
+             if obj:
+                 if isinstance(obj, dict):
+                     ts = obj.keys()[0].replace(microsecond=0)
+                     obj = [ts] + list(obj.values()[0][:3])
+                 if len(obj) < 5:
+                     obj.append(obj[0] + datetime.timedelta(minutes=1))
+                 new_h += yaml.dump([obj])
+         logging.info('refactored:\n%s'%new_h)
+         card.history = new_h
+         return ([card],[])

@@ -13,7 +13,7 @@
         {% if cardset.is_saved %}
         <form action="{% url cardbox.views.cardset_edit cardset.key.id %}" method="post">
         {% else %}
-        <form action="{% url cardbox.views.cardset_new %}" method="post">
+        <form action="{% url cardbox.views.cardset_create %}" method="post">
         {% endif %}
             <input id='id_title' type='text' class='title' name='title' value='{{cardset.title}}'>
             <div class='span-24'>

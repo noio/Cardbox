@@ -23,12 +23,6 @@ indexes:
   - name: enabled
   - name: learned_until
 
-- kind: Card
-  ancestor: yes
-  properties:
-  - name: enabled
-  - name: modified
-
 - kind: Revision
   ancestor: yes
   properties:

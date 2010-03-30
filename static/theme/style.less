@@ -8,11 +8,18 @@
 @passive:                           #94c15d;
 @active:                            #BF6F8C;
 
+/***** CLASSES *****/
+.rounded_corners (@radius: 5px) {
+  -moz-border-radius: @radius;
+  -webkit-border-radius: @radius;
+  border-radius: @radius;
+}
+
 /***** LAYOUT *****/
 
 #header                             {height: 54px; width: 100%; margin-bottom: 1em;
                                      background: @alt_background; 
-                                     border-bottom: 6px solid @accent; }
+                                     border-bottom: 6px solid @accent;}
 #header h1                          {margin: 0;}
     #logo                           {display: block; text-indent: -9999px;
                                      height: 60px; width: 200px; background: url('logo.png');
@@ -52,8 +59,13 @@ a.current                           {font-weight: bold; color: black; text-decor
                                 
 /***** ELEMENTS *****/          
 
+.notification                       {width: 100%; margin-bottom: 1em; font-size: 14px;}
+    .notification p.inner           {padding: 1em; margin-bottom: 0;
+                                     color: @alt_color+#333333; background: @accent+#333333;}
+    .notification .close            {padding: 0 1em; display: block; float: right;}
+
 .pill                               {background: @alt_background; color: @alt_color; display: inline-block;
-                                     padding: 0 1em; margin-bottom: 1em; border: 2px solid (@alt_background - #333333); border-radius: 1em;}
+                                     padding: 0 1em; margin-bottom: 1em; border: 2px solid (@alt_background - #333333); .rounded_corners(1em);}
     .pill a                         {color: @link_blue + #666;}
     .pill a:hover, .pill a.current  {color: @alt_color;}
                                 
@@ -66,9 +78,9 @@ a.current                           {font-weight: bold; color: black; text-decor
     .mapper .card select            {margin: 0 6px; position: relative; bottom: 5px;}
                                 
 #shortcuts ul                       {list-style:none; margin: 0;}
-    #shortcuts li                   {float: right; color: #ccc;}
-.key                                {color: #666; padding: 0 3px; margin: 0 4px;
-                                     background: #ccc; border-radius: 3px;}
+    #shortcuts li                   {float: right; color: @alt_color - #111111;}
+    .key                            {padding: 0 3px; margin: 0 4px; .rounded_corners(3px);
+                                     color: @alt_color - #111111; background: @alt_background + #333333;}
                                 
 .card                               {width: 470px;}
     .card .front, .card .back       {border: 2px solid #666;
@@ -83,7 +95,7 @@ a.current                           {font-weight: bold; color: black; text-decor
 .button-wrong, .button-correct      {display: block; float: left; 
                                      width: 100px; padding: 7px 0; 
                                      text-align: center;
-                                     border: 1px solid #666; border-radius: 5px;}
+                                     border: 1px solid #666; .rounded_corners(5px);}
 .button-wrong                       {float: right;}
                                 
                                 
@@ -95,7 +107,7 @@ a.current                           {font-weight: bold; color: black; text-decor
 .cardsets ul li span                {position: absolute; top: 70px; z-index: 2; 
                                      width: 230px; height: 52px; padding: 5px;
                                      background: #E9F3E9;
-                                     border: 1px solid #737873; border-radius: 3px;}
+                                     border: 1px solid #737873; .rounded_corners(3px);}
 .cardsets ul li h6 a                {float: right; display: block;}
 .cardsets ul li .card               {position: absolute; left: 3px; top: 5px;
                                      z-index: 1;}
@@ -103,8 +115,8 @@ a.current                           {font-weight: bold; color: black; text-decor
                                 
 .progressbar                        {position:relative; width: 180px; height: 12px;
                                      text-align: center; line-height: 14px; margin-bottom: 20px;
-                                     background: #efefef; border: 2px solid #666; border-radius: 8px;}
+                                     background: #efefef; border: 2px solid #666; .rounded_corners(8px);}
 .progressbar span                   {z-index: 3; position: relative;}
 .progressbar div                    {z-index: 2; position: absolute; top: -1px; left: -1px;
                                      height: 12px;
-                                     background: @passive; border:1px solid #666; border-radius: 8px;}
+                                     background: @passive; border:1px solid #666; .rounded_corners(8px);}

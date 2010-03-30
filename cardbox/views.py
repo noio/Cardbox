@@ -10,6 +10,7 @@ import re
 import unicodedata
 import operator
 import hashlib
+import datetime
 
 # AppEngine imports
 from google.appengine.ext import db
@@ -21,12 +22,12 @@ from google.appengine.api import memcache
 from django import forms
 from django.shortcuts import render_to_response
 from django.conf import settings as django_settings
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.http import HttpResponseForbidden, HttpResponseNotFound
 from django.template import Template, Context
 from django.template.loader import render_to_string
 from django.core.urlresolvers import reverse
-#from django.utils.safestring import mark_safe
+from django.utils.safestring import mark_safe
 from django.utils import simplejson
 #from django.core.exceptions import ValidationError
 
@@ -90,7 +91,7 @@ def page_create(request, pagetype):
         
     title = request.POST['title']
     name = re.sub(r'\s+','_',title.lower())
-    p = models.Page.get_by_name(name)
+    p = models.Page.get_by_name(pagetype+':'+name)
     if p is None:
         error = 'Invalid name. Please use only A-Z, 0-9 and spaces.'
         return respond(request, 'page_create.html',{'pagetype':pagetype,'error':error})
@@ -122,12 +123,12 @@ def cardset_create(request):
     return cardset_edit(request)
     
 def cardset_view(request, set_id):
-    cardset = get_by_id_or_error(request, models.Cardset, set_id)
+    cardset = get_by_id_or_404(request, models.Cardset, set_id, require_owner=False)
     return respond(request, 'cardset.html',{'cardset':cardset})
 
 @login_required
 def cardset_edit(request, set_id=None):
-    cardset = get_by_id_or_error(request, models.Cardset, set_id, require_owner=True, new_if_id_none=True)
+    cardset = get_by_id_or_404(request, models.Cardset, set_id, require_owner=True, new_if_id_none=True)
     factsheets = models.Factsheet.all().fetch(1000)
     templates = models.Template.all().fetch(1000)
     if request.method == 'POST':
@@ -137,7 +138,7 @@ def cardset_edit(request, set_id=None):
         #TODO: Validate mapping
         cardset.mapping = yaml.dump(simplejson.loads(request.POST['mapping']))
         cardset.put()
-        return HttpResponseRedirect(reverse('cardbox.views.cardset_edit',args=[cardset.key().id()]))
+        return HttpResponseRedirect(reverse('cardbox.views.cardset_view',args=[cardset.key().id()]))
     return respond(request, 'cardset_edit.html',{'cardset':cardset, 'factsheets':factsheets,'templates':templates})
 
 def template_preview(request, template_name):
@@ -150,7 +151,7 @@ def box_create(request):
 
 @login_required
 def box_edit(request, box_id=None):
-    box = get_by_id_or_error(request, models.Box, box_id, require_owner=True, new_if_id_none=True)
+    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=True)
     if request.method == 'POST':
         box.title = request.POST['title']
         box.cardsets = [int(x) for x in request.POST['cardsets'].split(',') if x != '']
@@ -162,7 +163,10 @@ def box_edit(request, box_id=None):
 
 @login_required
 def study(request, box_id):
-    box = get_by_id_or_error(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
+    if not request.user.has_studied:
+        request.user.has_studied = True
+        request.user.put()
+    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
     return respond(request, 'study.html',{'box':box})
     
 @login_required
@@ -171,7 +175,7 @@ def update_card(request,box_id):
     """
     card_id = request.POST['card_id']
     correct = request.POST['correct'] == 'true'
-    box = get_by_id_or_error(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
+    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
     studied_card = models.Card.get_by_key_name(card_id, parent=box)
     studied_card.answered(correct)
     return HttpResponse('success')
@@ -180,7 +184,7 @@ def update_card(request,box_id):
 def next_card(request, box_id):
     """ Returns a random next card from given box.
     """
-    box = get_by_id_or_error(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
+    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
     card = box.card_to_study()
     return respond(request, 'card_study.html',{'box':box,'card':card})
 
@@ -190,7 +194,7 @@ def browse(request):
     
 @login_required
 def card_view(request, box_id, card_id):
-    box = get_by_id_or_error(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
+    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
     card = models.Card.get_by_key_name(card_id, parent=box)
     print card.stats()
     return respond(request, 'card_view.html', {'card':card})
@@ -224,7 +228,7 @@ def browse_data(request,kind):
                   e.revision_number) for e in entities]
     elif kind == 'cardset':
         if 'box' in request.GET:
-            box = get_by_id_or_error(request,models.Box,request.GET['box'])
+            box = get_by_id_or_404(request,models.Box,request.GET['box'])
             entities = models.Cardset.get_by_id(box.cardsets)
         else:
             entities = models.Cardset.all().fetch(1000)
@@ -258,12 +262,30 @@ def respond(request, template, params=None):
     params['media_url'] = django_settings.MEDIA_URL
     full_path = request.get_full_path().encode('utf-8')
     if request.user is None:
-        params['sign_in'] = users.create_login_url(full_path)
+        params['sign_in'] = users.create_login_url('/')
+        params['notifications'] = params.get('notifications',[]) + [
+            """Welcome! New here? Feel free to look around. If you want to start studying, 
+            click LOGIN above and log in with your google account."""]
     else:
+        #Pass notifications if the user hasn't edited his box, or never studied.
+        if not request.user.has_studied:
+            edited_box = False
+            for b in request.user.my_boxes():
+                if b.modified > (request.user.created + datetime.timedelta(seconds=15)):
+                    edited_box = True
+            if not edited_box:
+                params['notifications'] = params.get('notifications',[]) + [
+                    u"""You haven't selected any cards to study. Click 'edit' on
+                    your box (below), select some cardsets, and click 'Save'"""]
+            else:
+                params['notifications'] = params.get('notifications',[]) + [
+                    u"""To start studying, click 'study' on the box you want to study."""]
+                
         params['sign_out'] = users.create_logout_url(full_path)
     return render_to_response(template, params)
-    
-def get_by_id_or_error(request, kind, entity_id, require_owner=True, new_if_id_none=True):
+
+
+def get_by_id_or_404(request, kind, entity_id, require_owner=True, new_if_id_none=True):
     """ Gets an entity by id. If the id is not found, will error,
         unless new_if_id_none, in that case a new entity is returned.
     """
@@ -273,7 +295,8 @@ def get_by_id_or_error(request, kind, entity_id, require_owner=True, new_if_id_n
         return kind()
     entity = kind.get_by_id(entity_id)
     account = models.Account.current_user_account
-    if entity is None or (require_owner and 
-        (request.user is None or entity.owner != request.user.google_user)):
-        return HttpResponseForbidden('This link is invalid or you\'re not allowed to view it.')
+    if entity is None:
+        raise Http404
+    if (require_owner and (request.user is None or entity.owner != request.user.google_user)):
+        raise Http404
     return entity

@@ -101,7 +101,7 @@ class Page(db.Model):
         except Exception, e:
             logging.exception(self._errors)
             self._errors.append({'message':'Error in %s format.'% self.__class__.__name__,
-                                 'content':e.message}) #TODO: e.message is deprecated
+                                 'content':mark_safe(e.message)}) #TODO: e.message is deprecated
     
     def _validate(self, parsed):
         self._parsed = parsed
@@ -188,7 +188,9 @@ class Account(db.Model):
     editor = db.UserProperty(required=True, auto_current_user=True)
     nickname = db.StringProperty(required=True)
     year_of_birth = db.IntegerProperty()
-
+    
+    has_studied = db.BooleanProperty(default=False)
+    
     # Current user's Account.  Updated by middleware.AddUserToRequestMiddleware.
     current_user_account = None
     
@@ -210,15 +212,17 @@ class Factsheet(Page):
         columns = yaml_obj['columns']
         rows = yaml_obj['rows']
         d = {}
-        for i in rows:
+        for index,i in enumerate(rows):
             if isinstance(rows,dict):
                 row_key, row = str(i), rows[i]
             else:
+                if not isinstance(i[0],basestring):
+                    raise Exception("Incorrect format in [%s]"%u','.join([unicode(b) for b in i]))
                 row_key, row = uri_b64encode(i[0].encode('utf-8')), i
             if not re.match(r'^[A-Za-z0-9\.=\-_]+$',row_key):
-                raise Exception("Error in row %s. Row names can only contain letters, numbers and . (period)" % row_key)
+                raise Exception("Error in row %s (%s). Row names can only contain letters, numbers and . (period)" % (row_key,u','.join([unicode(b) for b in row])))
             if len(columns) != len(row):
-                raise Exception("Row %s has wrong length." % row_key)
+                raise Exception("Row %s (%s) has wrong length." % (row_key,u','.join([unicode(b) for b in row])))
             d[row_key] = dict(zip(columns, row))
         self._parsed = {'rows':d,'columns':columns}
         
@@ -362,6 +366,10 @@ class Box(db.Model):
         n_available = available.count()
         return (1-(n_available/float(n_cards)))*100.0
         
+    def is_empty(self):
+        cards = Card.all().ancestor(self).filter('enabled',True).count(limit=1)
+        return (cards <= 0)
+        
     def card_to_study(self):
         study_set_size = 10
         study_set = Card.all().ancestor(self)
@@ -372,7 +380,12 @@ class Box(db.Model):
             available = Card.all().ancestor(self)
             available.filter('enabled',True)
             available.filter('learned_until <', datetime.datetime.now())
-            available = filter(lambda x: not x.in_study_set, list(available.fetch(100)))
+            available = list(available.fetch(100))
+            logging.info("available cards: %d"%len(available))
+            
+            available = filter(lambda x: not x.in_study_set, available)
+            logging.info("available cards filtered: %d"%len(available))
+            
             refill = random.sample(available,min(len(available),study_set_size))
             for c in refill:
                 c.in_study_set = True

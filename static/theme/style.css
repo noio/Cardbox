@@ -113,6 +113,22 @@ a.current {
   color: black;
   text-decoration: none;
 }
+.notification {
+  width: 100%;
+  margin-bottom: 1em;
+  font-size: 14px;
+}
+.notification p.inner {
+  padding: 1em;
+  margin-bottom: 0;
+  color: #ffffff;
+  background: #648ba8;
+}
+.notification .close {
+  padding: 0 1em;
+  display: block;
+  float: right;
+}
 .pill {
   background: #403c3b;
   color: #f0f0f0;
@@ -120,6 +136,8 @@ a.current {
   padding: 0 1em;
   margin-bottom: 1em;
   border: 2px solid #0d0908;
+  -moz-border-radius: 1em;
+  -webkit-border-radius: 1em;
   border-radius: 1em;
 }
 .pill a { color: #97bedb; }
@@ -145,14 +163,16 @@ a.current {
 }
 #shortcuts li {
   float: right;
-  color: #cccccc;
+  color: #dfdfdf;
 }
 .key {
-  color: #666666;
   padding: 0 3px;
   margin: 0 4px;
-  background: #cccccc;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
   border-radius: 3px;
+  color: #dfdfdf;
+  background: #736f6e;
 }
 .card { width: 470px; }
 .card .front {
@@ -178,6 +198,8 @@ a.current {
   padding: 7px 0;
   text-align: center;
   border: 1px solid #666666;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
   border-radius: 5px;
 }
 .button-wrong { float: right; }
@@ -202,6 +224,8 @@ a.current {
   padding: 5px;
   background: #e9f3e9;
   border: 1px solid #737873;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
   border-radius: 3px;
 }
 .cardsets ul li h6 a {
@@ -223,6 +247,8 @@ a.current {
   margin-bottom: 20px;
   background: #efefef;
   border: 2px solid #666666;
+  -moz-border-radius: 8px;
+  -webkit-border-radius: 8px;
   border-radius: 8px;
 }
 .progressbar span {
@@ -237,5 +263,7 @@ a.current {
   height: 12px;
   background: #94c15d;
   border: 1px solid #666666;
+  -moz-border-radius: 8px;
+  -webkit-border-radius: 8px;
   border-radius: 8px;
 }

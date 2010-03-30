@@ -1,12 +1,8 @@
 {% extends "base.html" %}
 
-{% block notification %}{%endblock%}
 
 {% block content %}
     <div class="span-18">
-        {% for n in notifications %}
-        <div class='notification span-18 last'>{{n}}</div>
-        {% endfor %}
         
         {% if request.user %}
             {% for box in request.user.my_boxes %}
@@ -24,7 +20,7 @@
                 <a href="{%url cardbox.views.box_create%}">new box</a>
             </div>
         {% else %}
-            &#160;
+            Welcome, please log in.
         {% endif %}
     </div>
     

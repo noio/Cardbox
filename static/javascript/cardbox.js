@@ -164,7 +164,7 @@ var MappingSelector = new Class({
         return opts
     }
 });
-
+/* TODO: Make a class of the following functions */
 /** FUNCTIONS **/
 /** 
  * Initializes the studying of cards. Fills box by first card in queue

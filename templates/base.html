@@ -16,7 +16,7 @@
     
 </head>
 
-<body id='{% block pageid %}{%endblock%}'>
+<body class='{%block pageclass%}{%endblock%}'>
     <div id='header'>
         <div class='container'> 
             {% block header %}
@@ -27,7 +27,7 @@
     
             <div class='span-12'>
                 <ul id='navbar' class='dropdown'>
-                    <li><a onClick='return false;'>create</a>
+                    <li><a href='#' onClick='return false;'>create</a>
                         <ul>
                             <li><a href="{% url cardbox.views.box_create %}">Box</a></li>
                             <li><a href="{% url cardbox.views.cardset_create %}">Cardset</a></li>
@@ -35,7 +35,7 @@
                             <li><a href='{% url cardbox.views.page_create "template" %}'>Template</a></li>
                         </ul>
                     </li>
-                    <li><a onClick='return false;'>browse</a>
+                    <li><a href='#' onClick='return false;'>browse</a>
                         <ul>
                             <li><a href="{% url cardbox.views.browse %}#cardset">Cardsets</a></li>
                             <li><a href='{% url cardbox.views.browse %}#factsheet'>Factsheets</a></li>
@@ -57,28 +57,40 @@
             <div class='span-6 last' id='shortcuts'>
                 <ul></ul>
             </div>
+            {% for n in notifications %}
+                <div class='notification span-24'><p class='inner bottom'>{{n}}</p></div>
+            {% endfor %}
             {% endblock header %} 
         </div>
     </div>
     
     <div class='container'>
-        {% block notification %}
-            {% for n in notifications %}
-            <div class='notification span-24'>{{n}}</div>
-            {% endfor %}
-        {% endblock notification%}
-        
         {% block content %}{%endblock content %}
     </div>
     
     <script type="text/javascript" >
         window.addEvent('domready', function() {  
             $$('#navbar a').addEvent('click',function(e){
-                window.location.href = e.target.get('href');
-                window.location.reload(true)
+                if (e.target.get('href') != '#'){
+                    window.location.href = e.target.get('href');
+                    window.location.reload(true)
+                }
+               
             });          
             var myMenu = new MenuMatic({'id':'navbar','matchWidthMode':true});
-        });        
+            
+            $$('.notification').each(function(elem, index){
+                close = new Element('a',{
+                    'href':'#',
+                    'class':'close',
+                    'html':'close'
+                });
+                close.addEvent('click',function(e){
+                    elem.hide(); return false;
+                });
+                element.grab(close,'top');
+            });
+        });    
     </script>
 </body>
 </html>

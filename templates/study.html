@@ -1,15 +1,18 @@
 {% extends "base.html" %}
-{% block pageid %}study-page{%endblock%}
 {# TODO Template mooier maken #}
 {% block content %}
     <div class="span-24 last">
         <div class='span-12 append-1'><h3>Studying from &laquo;{{box.title}}&raquo;</h3>
-            <div id='card-to-study' class='span-12'>
-                &nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>
-                &nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>
-            </div>
-            <a class='button-correct' href='#' onclick='sendCard(true); return false;'>correct</a>
-            <a class='button-wrong' href='#' onclick='sendCard(false); return false;'>wrong</a>
+            {% if not box.is_empty %}
+                <div id='card-to-study' class='span-12'>
+                    &nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>
+                    &nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>
+                </div>
+                <a class='button-correct' href='#' onclick='sendCard(true); return false;'>correct</a>
+                <a class='button-wrong' href='#' onclick='sendCard(false); return false;'>wrong</a>
+            {% else %}
+                <div class='span-12'><p class='error'>This box is empty</p></div>
+            {%endif%}
         </div>
         <div id='card-meta' class='span-6'></div>
         <div id='box-meta' class='span-5 last'></div>

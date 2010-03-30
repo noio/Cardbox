@@ -10,7 +10,7 @@
         $$('.pill .'+k).addClass('current');
         bsr.update({'kind':k});
     }
-    bsr=new BrowseTable('browser');
+    bsr=new BrowseTable('browser', {'actions':[]});
     if (window.location.hash){
         setKind(unescape(window.location.hash.substring(1)));
     }

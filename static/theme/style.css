@@ -143,19 +143,19 @@ a.current {
 .pill a { color: #97bedb; }
 .pill a:hover { color: #f0f0f0; }
 .pill a.current { color: #f0f0f0; }
-.browser {
+.browser .squish {
   max-height: 400px;
-  overflow-y: scroll;
+  overflow: auto;
   line-height: 1.5;
 }
 .browser table th { background: #cecece; }
 .browser table thead { cursor: pointer; }
 .browser .table-tr-hovered { background: #97bedb; }
 .mapper .card .tfield { border: 2px dashed #333333; }
-.mapper .card select {
-  margin: 0 6px;
-  position: relative;
-  bottom: 5px;
+.mapper .card .tfield.hovered {
+  border: 2px solid #666666;
+  background: white;
+  cursor: pointer;
 }
 #shortcuts ul {
   list-style: none;
@@ -189,7 +189,8 @@ a.current {
 }
 .card p.flip { text-align: right; }
 .splitview .card { width: 100%; }
-.splitview .card div { float: left; }
+.splitview .card div.front { float: left; }
+.splitview .card div.back { float: left; }
 .splitview .card div.front { margin-right: 10px; }
 .button-wrong, .button-correct {
   display: block;

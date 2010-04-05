@@ -13,6 +13,7 @@ import base64
 from google.appengine.ext import db
 from google.appengine.ext import deferred
 from google.appengine.ext.db import Key
+from google.appengine.ext.db import BadValueError, KindError
 
 # Django Imports
 import django.template as django_templates
@@ -25,6 +26,8 @@ import tools.diff_match_patch as dmp
 import tools.textile as textile
 
 # Local Imports
+
+
 
 ### Abstract Models ###
     
@@ -96,6 +99,8 @@ class Page(db.Model):
         try:
             obj = yaml.safe_load(t)
             self._validate(obj)
+            meta = obj['meta'] if 'meta' in obj else {}
+            self._set_meta_data(meta)
         except yaml.parser.ParserError, e:
             self._errors.append({'message':'YAML syntax error.','content':e.problem_mark})
         except Exception, e:
@@ -109,16 +114,16 @@ class Page(db.Model):
     def _save(self):
         """ Modifies the content of page, creates rev if necessary. 
         """
-        def txn(fs, nc, patch):
-            r = Revision(parent=fs,
-                         editor=fs.editor,
+        def txn(page, new_content, patch):
+            r = Revision(parent=page,
+                         editor=page.editor,
                          content=patch,
-                         number=fs.revision_number)
-            fs.content = nc
-            fs.revision_number += 1
+                         number=page.revision_number)
+            page.content = new_content
+            page.revision_number += 1
             r.put()
-            fs.put()
-            
+            page.put()
+        
         if self._is_revision:
             raise Exception("Cannot save revision.")
         if self.content != '' and self.content != self._edited:
@@ -127,6 +132,19 @@ class Page(db.Model):
             db.run_in_transaction(txn, self, self._edited, patch)
         else:
             self.content = self._edited
+            self.put()
+        
+    def _set_meta_data(self, meta):
+        allowed_meta = filter(lambda x: re.match(r'^[a-z]+$', x), meta.keys())
+        for m in allowed_meta:
+            attrname = 'meta_'+m
+            if hasattr(self, attrname):
+                value = meta[m]
+                if not re.match(r'^[a-zA-Z0-9 ]+$',value):
+                    raise Exception("Meta value for '%s' can only contain letters, numbers and spaces."%m)
+                value = re.sub(r' +',' ',value).lower()
+                setattr(self, attrname, value)
+        if len(allowed_meta) > 0:
             self.put()
             
     def revision(self, number):
@@ -153,18 +171,74 @@ class Page(db.Model):
 ### Custom Properties ###
 
 class PageProperty(db.Property):
-    data_type = Page
-    # TODO: Fix this caching
+
+    def __init__(self,
+                 reference_class=None,
+                 verbose_name=None,
+                 **attrs):
+      super(PageProperty, self).__init__(verbose_name, **attrs)
+      
+      if reference_class not in [Factsheet, Template, Scheduler]:
+          raise KindError('reference_class must be a Page subclass.')
+      self.reference_class = self.data_type = reference_class
+   
+    def __get__(self, model_instance, model_class):
+        if model_instance is None:
+            return self
+        if hasattr(model_instance, self.__id_attr_name()):
+            reference_id = getattr(model_instance, self.__id_attr_name())
+        else:
+            reference_id = None
+        resolved = getattr(model_instance, self.__resolved_attr_name())
+        if resolved is not None:
+            return resolved
+        else:
+            instance = self.reference_class.get_by_name(reference_id)
+            if instance is None:
+                raise Error('PageProperty encountered invalid page name.')
+            setattr(model_instance, self.__resolved_attr_name(), instance)
+            return instance
+   
+    def __set__(self, model_instance, value):
+        """Set reference."""
+        value = self.validate(value)
+        if value is not None:
+            if isinstance(value, basestring):
+                setattr(model_instance, self.__id_attr_name(), value)
+                setattr(model_instance, self.__resolved_attr_name(), None)
+            else:
+                setattr(model_instance, self.__id_attr_name(), value.key().name())
+                setattr(model_instance, self.__resolved_attr_name(), value)
+        else:
+            setattr(model_instance, self.__id_attr_name(), None)
+            setattr(model_instance, self.__resolved_attr_name(), None)
+   
     def get_value_for_datastore(self, model_instance):
-        page = super(PageProperty, self).get_value_for_datastore(model_instance)
-        if isinstance(page, basestring):
-            return page
-        return page.key().name()
-    
-    def make_value_from_datastore(self, value):
-        #if not hasattr(self, '_resolved'):
-        #    self._resolved = Page.get_by_name(value)
-        return Page.get_by_name(value)
+        """Get key of reference rather than reference itself."""
+        return getattr(model_instance, self.__id_attr_name())
+   
+    def validate(self, value):
+        if isinstance(value, basestring):
+            if value.split(':')[0] != self.reference_class.kind().lower():
+                raise BadValueError("Key %s is not allowed for this kind (%s)." %
+                            (value, self.reference_class.kind()))
+        return value
+        if value is not None and not value.key().name():
+            raise BadValueError(
+            '%s instance must have a complete key before it can be stored as a '
+            'reference' % self.reference_class.kind())
+        value = super(PageProperty, self).validate(value)
+        if value is not None and not isinstance(value, self.reference_class):
+            raise KindError('Property %s must be an instance of %s' %
+                          (self.name, self.reference_class.kind()))
+        return value
+   
+    def __id_attr_name(self):
+        return self._attr_name()
+   
+    def __resolved_attr_name(self):
+        return '_RESOLVED' + self._attr_name()
+
 
 class TimeDeltaProperty(db.Property):
     def get_value_for_datastore(self, model_instance):
@@ -206,6 +280,8 @@ class Revision(db.Model):
     number = db.IntegerProperty(required=True)
     
 class Factsheet(Page):
+    meta_subject = db.StringProperty()
+    
     def _validate(self, yaml_obj):
         if yaml_obj is None:
             raise Exception('Factsheet is empty.')
@@ -267,7 +343,10 @@ class Template(Page):
     def html_preview(self):
         v = self.variables()
         row = dict(zip(v,v))
-        return render_to_string('card.html',{'card':CardRenderer(row=row,template=self)})
+        return mark_safe(
+            '<div class="splitview">'+
+            render_to_string('card.html',{'card':CardRenderer(row=row,template=self)})
+            +'</div>')
         
 
 class Scheduler(Page):
@@ -294,8 +373,8 @@ class Cardset(db.Model):
     owner = db.UserProperty(auto_current_user_add=True)
     created = db.DateTimeProperty(auto_now_add=True)
     public = db.BooleanProperty(default=True)
-    factsheet = PageProperty()
-    template = PageProperty(default='template:default')
+    factsheet = PageProperty(Factsheet)
+    template = PageProperty(Template,default='template:default')
     mapping = db.TextProperty(default='')
     
     def render_card(self, card_id):
@@ -316,11 +395,12 @@ class Cardset(db.Model):
         return self.render_card(None)
         
     def all_ids(self):
-        a = []
         if self.factsheet is not None and not self.factsheet.errors():
             k = self.key().id()
-            a = [(k, c_id) for c_id in self.factsheet.row_ids()]
-        return a
+            return [(k, c_id) for c_id in self.factsheet.row_ids()]
+        else:
+            print 'factsheet none'
+            return []
         
     def mapping_as_json(self):
         return simplejson.dumps(yaml.load(self.mapping))
@@ -330,7 +410,7 @@ class Box(db.Model):
     owner = db.UserProperty(auto_current_user_add=True)
     modified = db.DateTimeProperty(auto_now=True)
     cardsets = db.ListProperty(int)
-    scheduler = PageProperty(default='scheduler:default')
+    scheduler = PageProperty(Scheduler,default='scheduler:default')
     selector = db.TextProperty()
     last_studied = db.DateTimeProperty(default=datetime.datetime(2010,1,1))
     time_studied = TimeDeltaProperty(default=datetime.timedelta(0))
@@ -546,7 +626,7 @@ class CardRenderer():
                 return self._error_card("Card not found in factsheet.")
             self.row = self.factsheet.rows()[self.card_id]
         #Actual rendering
-        base = dict([(v,mark_safe('&#160;')) for v in self.template.variables()])
+        base = dict([(v,mark_safe('&#160;&#160;')) for v in self.template.variables()])
         base.update(self.row)        
         mapping = yaml.load(self.mapping)
         if mapping is not None and mapping != 'None' and mapping != '':

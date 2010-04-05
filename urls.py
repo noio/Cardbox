@@ -27,5 +27,7 @@ urlpatterns = patterns('',
    (r"^browse$","cardbox.views.browse"),
    (r"^browse_data/(?P<kind>factsheet|template|scheduler|cardset)$","cardbox.views.browse_data"),
    
-   (r"^template_preview/([a-z]+:?[a-z0-9\_]+)$", "cardbox.views.template_preview")
+   (r"^template_preview/([a-z]+:?[a-z0-9\_]+)$", "cardbox.views.template_preview"),
+   
+   (r"^autocomplete/(?P<kind>[a-z]+)/(?P<field>[a-z]+)", "cardbox.views.autocomplete")
 )

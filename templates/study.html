@@ -1,23 +1,16 @@
 {% extends "base.html" %}
 {# TODO Template mooier maken #}
 {% block content %}
-    <div class="span-24 last">
-        <div class='span-12 append-1'><h3>Studying from &laquo;{{box.title}}&raquo;</h3>
-            {% if not box.is_empty %}
-                <div id='card-to-study' class='span-12'>
-                    &nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>
-                    &nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>&nbsp;<br/>
-                </div>
-                <a class='button-correct' href='#' onclick='sendCard(true); return false;'>correct</a>
-                <a class='button-wrong' href='#' onclick='sendCard(false); return false;'>wrong</a>
-            {% else %}
-                <div class='span-12'><p class='error'>This box is empty</p></div>
-            {%endif%}
-        </div>
-        <div id='card-meta' class='span-6'></div>
-        <div id='box-meta' class='span-5 last'></div>
-        <script type='text/javascript'>
-            startStudy('{{box.key.id}}');
-        </script>
+    <div class="span-24"><h3>Studying from &laquo;{{box.title}}&raquo;</h3></div>
+    <div class="span-24" id='study-area'>
+        <div class='card-container span-12'></div>
+        <div class='card-info prepend-1 span-6'></div>
+        <div class='box-info span-5 last'></div>
+        <div class='buttons span-12 append-12 last'>
     </div>
+    <script type='text/javascript'>
+        window.addEvent('domready',function(){
+            var studyClient = new StudyClient('study-area',{{box.key.id}});
+        });
+    </script>
 {% endblock %}

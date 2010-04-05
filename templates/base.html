@@ -8,11 +8,12 @@
     <link rel="stylesheet" href="{{media_url}}theme/style.css" type="text/css" media="screen" charset="utf-8"/>
     <link rel="stylesheet" href="{{media_url}}theme/MenuMatic.css" type="text/css" media="screen" title="no title" charset="utf-8">
     
-    <script src="http://www.google.com/jsapi" type="text/javascript"></script>
+    <!--<script src="http://www.google.com/jsapi" type="text/javascript"></script>-->
     <script src="{{media_url}}javascript/mootools-1.2.4-core.js" type="text/javascript" charset="utf-8"></script>
     <script src="{{media_url}}javascript/mootools-1.2.4.4-more.js" type="text/javascript" charset="utf-8"></script>
     <script src="{{media_url}}javascript/cardbox.js" type="text/javascript" charset="utf-8"></script>
     <script src="{{media_url}}javascript/MenuMatic_0.68.3.js" type="text/javascript" charset="utf-8"></script>
+    <script src="{{media_url}}javascript/autocompleter.js" type="text/javascript" charset="utf-8"></script>
     
 </head>
 
@@ -78,6 +79,8 @@
                
             });          
             var myMenu = new MenuMatic({'id':'navbar','matchWidthMode':true});
+            
+            KeyBinder.setInterface('shortcuts');
             
             $$('.notification').each(function(elem, index){
                 close = new Element('a',{

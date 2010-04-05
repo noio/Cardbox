@@ -69,13 +69,13 @@ a.current                           {font-weight: bold; color: black; text-decor
     .pill a                         {color: @link_blue + #666;}
     .pill a:hover, .pill a.current  {color: @alt_color;}
                                 
-.browser                            {max-height: 400px; overflow-y: scroll; line-height: 1.5;}
+.browser .squish                    {max-height: 400px; overflow: auto; line-height: 1.5;}
     .browser table th               {background: @background - #222;}
     .browser table thead            {cursor: pointer;}
     .browser .table-tr-hovered      {background: @accent + #666;}
                                 
 .mapper .card .tfield               {border: 2px dashed #333;}
-    .mapper .card select            {margin: 0 6px; position: relative; bottom: 5px;}
+    .mapper .card .tfield.hovered   {border: 2px solid #666; background: white; cursor: pointer;}
                                 
 #shortcuts ul                       {list-style:none; margin: 0;}
     #shortcuts li                   {float: right; color: @alt_color - #111111;}
@@ -88,7 +88,8 @@ a.current                           {font-weight: bold; color: black; text-decor
                                      padding: 20px;}
     .card p.flip                    {text-align: right;}
     .splitview .card                {width: 100%;}
-    .splitview .card div            {float: left;}
+    .splitview .card div.front,
+    .splitview .card div.back       {float: left;}
     .splitview .card div.front      {margin-right: 10px;} 
                                 
                                 

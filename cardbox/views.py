@@ -110,6 +110,7 @@ def page_edit(request, pagename):
     if request.method == 'POST':
         content = request.POST['content']
         fs.edit(content)
+        return HttpResponseRedirect(reverse('cardbox.views.page_edit',args=[pagename]))
     return respond(request,'page.html',{'editable':True,
                                         'page':fs})
 
@@ -199,13 +200,28 @@ def card_view(request, box_id, card_id):
     print card.stats()
     return respond(request, 'card_view.html', {'card':card})
     
+def autocomplete(request, kind, field):
+    allowed_kinds = {'factsheet':{'model':models.Factsheet,
+                                  'fields':{'subject':'meta_subject'}}}
+    d = allowed_kinds.get(kind, {})
+    model = d.get('model',None)
+    field_name = d.get('fields',{}).get(field,None)
+    value = request.POST['value']
+    if model and field_name and value:
+        q = model.all().filter(field_name + ' >=',value)
+        q.filter(field_name + ' <', unicode(value)+u"\ufffd")
+        entities = q.fetch(10)
+        s = set([getattr(e, field_name) for e in entities])
+        return HttpResponse(simplejson.dumps(list(s)), mimetype='application/json')
+
 def browse_data(request,kind):
     if kind == 'factsheet':
         entities = models.Factsheet.all().fetch(1000)
-        headers = ['id','url','name','columns','modified','revision']
+        headers = ['id','url','name','subject','columns','modified','revision']
         rows = [ (e.key().name(),
                   reverse('cardbox.views.page_view',args=[e.key().name()]),
-                  e.name(False), 
+                  e.name(False),
+                  e.meta_subject if e.meta_subject else '-',
                   ','.join(e.columns()),
                   e.modified.strftime('%d/%m/%Y'), 
                   e.revision_number) for e in entities]
@@ -232,10 +248,11 @@ def browse_data(request,kind):
             entities = models.Cardset.get_by_id(box.cardsets)
         else:
             entities = models.Cardset.all().fetch(1000)
-        headers = ['id','url','name','factsheet','created']
+        headers = ['id','url','name','subject','factsheet','created']
         rows = [ (e.key().id(),
                   reverse('cardbox.views.cardset_view',args=[e.key().id()]),
                   e.title,
+                  str(e.factsheet.meta_subject),
                   e.factsheet.name(False) + ' ('+ ','.join(e.factsheet.columns()) +')',
                   e.created.strftime('%d/%m/%Y')) for e in entities]
     else:

@@ -1,5 +1,5 @@
 {% load cardbox_filters %}
-<div id="card-{{box.key.id}}-{{card.key.name}}">
+<div>
     {% include 'card.html' %}
    
     <form action="{% url cardbox.views.update_card box.key.id %}" method="post">
@@ -7,7 +7,7 @@
         <input class='correct' type="hidden" name="correct" value="0"/>
     </form>
     
-    <div class='card-meta' style='display:none'>
+    <div class='card-info' style='display:none'>
         <h4>This Card</h4>
         <ul>
             <li>correct: {{card.n_correct}}</li>
@@ -20,7 +20,7 @@
         </ul>
     </div>
     
-    <div class='box-meta' style='display:none'>
+    <div class='box-info' style='display:none'>
         <h4>This Box</h4>
         <p>total time studied: {{box.time_studied|timedelta}}</p>
         <div class='progressbar'>

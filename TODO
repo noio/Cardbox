@@ -2,10 +2,11 @@ FEATURES
 ========
 CHANGED: Progressive set learning
 TODO: Filtering for browser
+TODO: Better mapping selection
+TODO: Wizard for card creation
 
 INTERFACE
 =========
-TODO: First time visit notifications
 TODO: picker for scheduler
 TODO: Meta data for pages
 TODO: Changeable name on page-creation page

@@ -1,6 +1,6 @@
 <ul>
     {% for factsheet in factsheets %}
-    <li>{{factsheet.name}} 
+    <li>{{factsheet.title}} 
         <a href='' onClick='$("id_factsheet").set("value","{{factsheet.key.name}}"); return false;'>select</a>
         <a href='{%url cardbox.views.page_view factsheet.key.name %}' target='_blank'>view</a>
     </li>

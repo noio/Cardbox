@@ -215,53 +215,40 @@ def autocomplete(request, kind, field):
         return HttpResponse(simplejson.dumps(list(s)), mimetype='application/json')
 
 def browse_data(request,kind):
+    """ Returns a json object with a list of data of the requested kind
+    """
     if kind == 'factsheet':
-        entities = models.Factsheet.all().fetch(1000)
-        headers = ['id','url','name','subject','columns','modified','revision']
-        rows = [ (e.key().name(),
-                  reverse('cardbox.views.page_view',args=[e.key().name()]),
-                  e.name(False),
-                  e.meta_subject if e.meta_subject else '-',
-                  ','.join(e.columns()),
-                  e.modified.strftime('%d/%m/%Y'), 
-                  e.revision_number) for e in entities]
+        model = models.Factsheet
     elif kind == 'template':
-        entities = models.Template.all().fetch(1000)
-        headers = ['id','url','name','variables','modified','revision']
-        rows = [ (e.key().name(),
-                  reverse('cardbox.views.page_view',args=[e.key().name()]),
-                  e.name(False), 
-                  ','.join(e.variables()), 
-                  e.modified.strftime('%d/%m/%Y'), 
-                  e.revision_number) for e in entities]
+        model = models.Template
     elif kind == 'scheduler':
-        entities = models.Scheduler.all().fetch(1000)
-        headers = ['id','url','name','modified','revision']
-        rows = [ (e.key().name(),
-                  reverse('cardbox.views.page_view',args=[e.key().name()]),
-                  e.name(False), 
-                  e.modified.strftime('%d/%m/%Y'), 
-                  e.revision_number) for e in entities]
+        model = models.Scheduler
     elif kind == 'cardset':
-        if 'box' in request.GET:
-            box = get_by_id_or_404(request,models.Box,request.GET['box'])
-            entities = models.Cardset.get_by_id(box.cardsets)
-        else:
-            entities = models.Cardset.all().fetch(1000)
-        headers = ['id','url','name','subject','factsheet','created']
-        rows = [ (e.key().id(),
-                  reverse('cardbox.views.cardset_view',args=[e.key().id()]),
-                  e.title,
-                  str(e.factsheet.meta_subject),
-                  e.factsheet.name(False) + ' ('+ ','.join(e.factsheet.columns()) +')',
-                  e.created.strftime('%d/%m/%Y')) for e in entities]
+        model = models.Cardset
     else:
-        return HttpResponseForbidden('Kind not found.')
-                  
+        raise Http404('Kind not found.')
+    # Apply  filters
+    if 'ids' in request.GET:
+        ids = [int(i) for i in request.GET['ids'].split(',')]
+        entities = model.get_by_id(ids)
+    else:
+        entities = model.all()
+        for key,value in request.GET.items():
+            if hasattr(model,'meta_keys') and key in model.meta_keys:
+                attr_name = model.meta_keys[key]
+                entities.filter(attr_name+' >=',value)
+                entities.filter(attr_name+' <',value+u"\ufffd")
+    headers = ['id','url','title','tags','date']
+    rows = [(e.key().id_or_name(),
+            e.url,
+            e.title,
+            e.html_meta(),
+            e.modified.strftime('%d/%M/%Y'))
+            for e in entities]
     return HttpResponse(simplejson.dumps({'headers':headers,'rows':rows}))
 
-
 ### Helper functions ###
+
 
 def respond(request, template, params=None):
     """ Helper to render a response, passing standard stuff to the response.

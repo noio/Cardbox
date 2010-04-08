@@ -151,6 +151,8 @@ a.current {
 .browser table th { background: #cecece; }
 .browser table thead { cursor: pointer; }
 .browser .table-tr-hovered { background: #97bedb; }
+.browser col.column-view { width: 50px; }
+.browser col.column-date { width: 100px; }
 .mapper .card .tfield { border: 2px dashed #333333; }
 .mapper .card .tfield.hovered {
   border: 2px solid #666666;

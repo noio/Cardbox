@@ -17,7 +17,7 @@
             </div>
             <script>
                 selectedBrowser = new BrowseTable('browser_selected',{
-                    {%if box.is_saved%}'filters':{'box':{{box.key.id}} },{%endif%}
+                    {%if box.is_saved%}'filters':{'ids':'{{box.cardsets|join:","}}' },{%endif%}
                     'kind':'cardset',
                     'actions':['remove']
                 });

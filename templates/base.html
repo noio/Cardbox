@@ -65,6 +65,8 @@
         </div>
     </div>
     
+    
+    
     <div class='container'>
         {% block content %}{%endblock content %}
     </div>
@@ -73,27 +75,15 @@
         window.addEvent('domready', function() {  
             $$('#navbar a').addEvent('click',function(e){
                 if (e.target.get('href') != '#'){
+                    //Remove this stuff.
                     window.location.href = e.target.get('href');
                     window.location.reload(true)
                 }
                
             });          
-            var myMenu = new MenuMatic({'id':'navbar','matchWidthMode':true});
-            
-            KeyBinder.setInterface('shortcuts');
-            
-            $$('.notification').each(function(elem, index){
-                close = new Element('a',{
-                    'href':'#',
-                    'class':'close',
-                    'html':'close'
-                });
-                close.addEvent('click',function(e){
-                    elem.hide(); return false;
-                });
-                element.grab(close,'top');
-            });
-        });    
+            var myMenu = new MenuMatic({'id':'navbar','matchWidthMode':false});
+            KeyBinder.setInterface('shortcuts'); 
+        });
     </script>
 </body>
 </html>

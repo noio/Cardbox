@@ -1,6 +1,19 @@
 /** CLASSES **/
 
 /**
+ * Ribbon is an expanding navigation menu, using hierarchical 
+ * horizontal bars.
+ */
+var Ribbon = new Class({
+    Implements: [Options],
+    
+    initialize: function(id, options){
+        this.navbar = $(id);
+        
+    }
+})
+
+/**
  * BrowseTable implements functions for displaying a table
  * for lists of items on the server
  */
@@ -10,7 +23,8 @@ var BrowseTable = new Class({
         kind: null,
         actions: ['select'],
         allowedFilters: {'factsheet':['subject']},
-        filters: []
+        filters: {},
+        showControl: true
     },
 
     initialize: function(id, options){
@@ -26,39 +40,51 @@ var BrowseTable = new Class({
             'sortReverse':true,
             'allowMultiSelect':false
         });
+       
     },
     
     update: function(opts){
         this.setOptions(opts);
+        this.redraw();
         this.refresh();
     },
     
     refresh: function(){
-        this.element.spin();
+        this.table.element.spin();
         var dataRequest = new Request.JSON({
             url: "/browse_data/"+this.options.kind.toLowerCase(), 
             onSuccess: function(data){
-                this.data = data;
-                this.redraw();
+                this.addData(data);
             }.bind(this)
         }).get(this.options.filters);
     },
     
     redraw: function(){
-        this.element.unspin();
         // Draw control bar
         this.control.empty();
-        var h = new Hash(this.options.allowedFilters);
-        h.each(function(value, key){
-            var label = new Element('label',{'html':value+': '});
-            var field = new Element('input',{'type':'text'});
-            var autocompleter = new Autocompleter.Request.JSON(field,
-                '/autocomplete/'+key+'/'+value,
-                {'postVar':'value'}
-            );
-            this.control.adopt(label, field);
-        }.bind(this));
+        if (!this.options.showControl) {return;}
+        var h = this.options.allowedFilters[this.options.kind];
+        if($chk(h)){
+             h.each(function(value, index){
+                var label = new Element('label',{'html':value+': '});
+                var field = new Element('input',{'type':'text'});
+                this.control.adopt(label, field);
+                var o = new Observer(field, function(e){
+                    this.addFilter(value, e);
+                }.bind(this), {'delay':1000});
+            }.bind(this));
+        }
+    },
+    
+    addFilter: function(field, value){
+        this.options.filters[field] = value;
+        this.refresh();
+    },
+    
+    addData: function(data){
         // Redraw table
+        this.table.element.unspin();
+        this.data = data;
         this.table.empty();
         var headers = this.data.headers.slice(2);
         headers.unshift('view');
@@ -67,6 +93,10 @@ var BrowseTable = new Class({
         this.data.rows.each(function(row,idx){
             this.addRow(row);
         },this);
+        headers.each(function(header,idx){
+            var col = new Element('col',{'class':'column-'+header})
+            col.inject(this.element.getElement('thead'),'before');
+        }.bind(this))
     },
     
     getNamedRowData: function(id){

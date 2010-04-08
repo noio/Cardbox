@@ -20,6 +20,8 @@ import django.template as django_templates
 from django.utils.safestring import mark_safe
 from django.template.loader import render_to_string
 from django.utils import simplejson
+from django.core.urlresolvers import reverse
+
 
 # Library Imports
 import tools.diff_match_patch as dmp
@@ -36,6 +38,7 @@ class Page(db.Model):
     modified = db.DateTimeProperty(auto_now=True)
     editor = db.UserProperty(auto_current_user=True)
     revision_number = db.IntegerProperty(default=1)
+    meta_keys = {}
     
     @classmethod
     def get_by_name(cls, name):
@@ -61,14 +64,22 @@ class Page(db.Model):
         self._parsed = None
         self._is_revision = is_revision
         db.Model.__init__(self, **kwds)
-    
-    def name(self, prefix=True):
+        
+    @property
+    def title(self):
+        """ Returns a formatted title for this page. 
+        """
         nm = self.key().name()
-        if not prefix:
-            nm = nm.split(':')[1]
+        nm = nm.split(':')[1]
         nm = nm.replace(':',':_')
         nm = ' '.join([w.capitalize() for w in nm.split('_')])
         return nm
+        
+    @property
+    def url(self):
+        """ Returns the view-url for this page. 
+        """
+        return reverse('cardbox.views.page_view',args=[self.key().name()])
         
     def edit(self, new_content):
         self._edited = new_content
@@ -83,6 +94,13 @@ class Page(db.Model):
     
     def html_preview(self):
         return None
+        
+    def html_meta(self):
+        s = []
+        for key, attr_name in self.meta_keys.items():
+            if getattr(self, attr_name):
+                s.append('%s: %s' % (key, getattr(self, attr_name)))
+        return ', '.join(s)
         
     def source(self):
         return self._edited if self._edited is not None else self.content
@@ -106,7 +124,7 @@ class Page(db.Model):
         except Exception, e:
             logging.exception(self._errors)
             self._errors.append({'message':'Error in %s format.'% self.__class__.__name__,
-                                 'content':mark_safe(e.message)}) #TODO: e.message is deprecated
+                                 'content':mark_safe(e)})
     
     def _validate(self, parsed):
         self._parsed = parsed
@@ -135,16 +153,14 @@ class Page(db.Model):
             self.put()
         
     def _set_meta_data(self, meta):
-        allowed_meta = filter(lambda x: re.match(r'^[a-z]+$', x), meta.keys())
-        for m in allowed_meta:
-            attrname = 'meta_'+m
-            if hasattr(self, attrname):
-                value = meta[m]
+        for key, attr_name in self.meta_keys.items():
+            if key in meta and hasattr(self,attr_name):
+                value = meta[key]
                 if not re.match(r'^[a-zA-Z0-9 ]+$',value):
                     raise Exception("Meta value for '%s' can only contain letters, numbers and spaces."%m)
                 value = re.sub(r' +',' ',value).lower()
-                setattr(self, attrname, value)
-        if len(allowed_meta) > 0:
+                setattr(self, attr_name, value)
+        if len(self.meta_keys.keys()):
             self.put()
             
     def revision(self, number):
@@ -250,7 +266,7 @@ class TimeDeltaProperty(db.Property):
     def make_value_from_datastore(self, value):
         if value is not None:
             return datetime.timedelta(microseconds=value)
- 
+
 
 ### Models ###
 
@@ -280,6 +296,7 @@ class Revision(db.Model):
     number = db.IntegerProperty(required=True)
     
 class Factsheet(Page):
+    meta_keys = {'subject':'meta_subject'}
     meta_subject = db.StringProperty()
     
     def _validate(self, yaml_obj):
@@ -347,7 +364,7 @@ class Template(Page):
             '<div class="splitview">'+
             render_to_string('card.html',{'card':CardRenderer(row=row,template=self)})
             +'</div>')
-        
+
 
 class Scheduler(Page):
     def _validate(self, yaml_obj):
@@ -368,14 +385,25 @@ class Scheduler(Page):
               'interval':card.interval}
         card.learned_until = eval(self.parsed(),gb,lc).replace(microsecond=0)
 
+
 class Cardset(db.Model):
     title = db.StringProperty(default='New Cardset')
     owner = db.UserProperty(auto_current_user_add=True)
     created = db.DateTimeProperty(auto_now_add=True)
+    modified = db.DateTimeProperty(auto_now=True)
     public = db.BooleanProperty(default=True)
     factsheet = PageProperty(Factsheet)
     template = PageProperty(Template,default='template:default')
     mapping = db.TextProperty(default='')
+    
+    @property
+    def url(self):
+        """ Returns the view url for this cardset. 
+        """
+        return reverse('cardbox.views.cardset_view',args=[self.key().id()])
+        
+    def html_meta(self):
+        return self.factsheet.html_meta()
     
     def render_card(self, card_id):
         return CardRenderer(template=self.template,

@@ -7,7 +7,7 @@
             <a href='{% url cardbox.views.page_edit page.key.name %}' {% if editable %}class='current'{%endif%}>edit</a>
         </span>
         
-        <h3>{{page.name}}</h3>
+        <h3>{{page.title}}</h3>
         <p>revision: {{page.revision_number}}</p>
         {% if editable %}
         <form action="{% url cardbox.views.page_edit page.key.name %}" method="post">

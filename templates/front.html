@@ -28,7 +28,7 @@
         <h4>Recent Activity</h4>
         <ul>
             {% for factsheet in factsheets %}
-            <li>{{factsheet.name}} <a href='{%url cardbox.views.page_edit factsheet.key.name %}'>edit</a></li>
+            <li>{{factsheet.title}} <a href='{%url cardbox.views.page_edit factsheet.key.name %}'>edit</a></li>
             {% endfor %}
         </ul>
         <h4>Contact the Developer</h4>

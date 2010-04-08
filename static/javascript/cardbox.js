@@ -6,10 +6,53 @@
  */
 var Ribbon = new Class({
     Implements: [Options],
+    options:{
+        'delay':2000
+    },
     
     initialize: function(id, options){
         this.navbar = $(id);
-        
+        this.setOptions(options);
+        this.slides = [];
+        this.navbar.getChildren('li').each(function(li, idx){
+            var ul = li.getElement('ul');
+            if (ul){
+                var div = new Element('div').inject(ul, 'before');
+                div.grab(ul);
+                ul.addClass('ribbon');
+                var totalWidth = 0;
+                ul.getElements('li').each(function(innerLi,i2){
+                    totalWidth += innerLi.getSize().x;
+                });
+                div.position({
+                    'relativeTo':li,
+                    'position':'centerBottom',
+                    'edge':'centerTop'
+                })
+                div.setStyle('width',totalWidth+'px');
+                ul.setStyle('width',totalWidth+'px');
+                var slide = new Fx.Slide(ul, {'duration':200});
+                slide.hide();
+                this.slides.push(slide);
+                var a = li.getElement('a');
+                a.addEvent('mouseover',function(e){
+                    this.slides.each(function(s,i){s.hide();})
+                    this.wake();
+                    slide.slideIn();
+                }.bind(this));
+            };
+        }.bind(this));
+    },
+    
+    wake: function(e){
+        if ($chk(this.timer)){
+            $clear(this.timer);
+        }
+        this.timer = this.sleep.delay(this.options.delay, this);
+    },
+    
+    sleep: function(e){
+        this.slides.each(function(s,i){s.slideOut();});
     }
 })
 

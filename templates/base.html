@@ -27,7 +27,7 @@
             </div>
     
             <div class='span-12'>
-                <ul id='navbar' class='dropdown'>
+                <ul id='navbar'>
                     <li><a href='#' onClick='return false;'>create</a>
                         <ul>
                             <li><a href="{% url cardbox.views.box_create %}">Box</a></li>
@@ -81,7 +81,7 @@
                 }
                
             });          
-            var myMenu = new MenuMatic({'id':'navbar','matchWidthMode':false});
+            var ribbon = new Ribbon('navbar');
             KeyBinder.setInterface('shortcuts'); 
         });
     </script>

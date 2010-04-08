@@ -32,17 +32,12 @@
   background: #403c3b;
   color: #f0f0f0;
 }
-#subMenusContainer ul {
-  padding: 0;
-  margin: 0;
-  display: block;
-  background: #403c3b;
-  color: #f0f0f0;
-}
 #navbar li {
   height: 60px;
+  width: 100px;
   float: left;
   list-style: none;
+  z-index: 1000;
 }
 #navbar li a {
   display: block;
@@ -55,26 +50,18 @@
   font-size: 14px;
   text-transform: uppercase;
 }
-#subMenusContainer a {
+#navbar .ribbon { height: 60px; }
+#navbar .ribbon li { float: left; }
+#navbar .ribbon a {
+  width: 100px;
+  padding: 0;
+  position: relative;
   display: block;
-  padding: 6px 20px;
-  text-decoration: none;
-  color: #f0f0f0;
-  border-top: 1px solid #f0f0f0;
+  height: 60px;
+  background: gray;
+  z-index: 100;
 }
-#subMenusContainer a:hover {
-  background-color: #575757;
-  color: #ffffff;
-}
-#subMenusContainer a:focus {
-  background-color: #575757;
-  color: #ffffff;
-}
-#navbar a.mainMenuParentBtnFocused {
-  background-color: #575757;
-  color: #ffffff;
-}
-#subMenusContainer a.subMenuParentBtnFocused {
+#navbar li a.focused {
   background-color: #575757;
   color: #ffffff;
 }
@@ -85,23 +72,6 @@
 #navbar li a:focus {
   background-color: #575757;
   color: #ffffff;
-}
-.smOW {
-  display: none;
-  position: absolute;
-  overflow: hidden;
-  padding: 0 2px;
-  margin: 0 0 0 -2px;
-}
-#subMenusContainer {
-  display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 0;
-  overflow: visible;
-  z-index: 1000000000;
 }
 body {
   background: url('header-bg.png') repeat-x top #f0f0f0;

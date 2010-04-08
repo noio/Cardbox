@@ -27,27 +27,20 @@
 
 /***** NAVBAR *****/
 #navbar                             {height: 54px; border-left: 1px solid (@alt_color - #999999);}
-#navbar, #navbar ul, #subMenusContainer ul{padding: 0; margin: 0; display: block; 
+#navbar, #navbar ul                 {padding: 0; margin: 0; display: block; 
                                      background: @alt_background; color: @alt_color;}
-#navbar li                          {height: 60px; float: left;
-                                     list-style:none;}
+#navbar li                          {height: 60px; width: 100px; float: left;
+                                     list-style:none; z-index: 1000;}
     #navbar li a                    {display: block; height: 21px;
                                      padding: 33px 20px 0; color: @alt_color;
                                      border-right: 1px solid (@alt_color - #999999);
                                      text-decoration: none; font-family: Helvetica, Verdana, Tahoma Arial; font-size: 14px; text-transform: uppercase;}
-    #subMenusContainer a            {display:block; padding:6px 20px; 
-                                     text-decoration:none; color: @alt_color; border-top: 1px solid @alt_color;}
-    #subMenusContainer a:hover, 
-    #subMenusContainer a:focus, 
-    #navbar a.mainMenuParentBtnFocused, 
-    #subMenusContainer a.subMenuParentBtnFocused,
+    #navbar .ribbon                 {height: 60px;}
+    #navbar .ribbon li              {float: left;}
+    #navbar .ribbon a               {width: 100px; padding: 0; position: relative; display: block; height: 60px; background: gray;  z-index: 100;}
+    #navbar li a.focused,
     #navbar li a:hover,
     #navbar li a:focus              {background-color: (@alt_color - #999999); color:#FFF;}
-    /* Submenu Outer Wrapper - each submenu is inside a div with this class */
-    .smOW                           {display:none; position: absolute; overflow:hidden; 
-                                     padding:0 2px; margin:0 0 0 -2px;}
-    #subMenusContainer              {display:block; position:absolute; top:0; left:0; width:100%; height:0; overflow:visible; z-index:1000000000;}
-
   
                                 
 

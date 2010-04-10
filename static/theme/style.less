@@ -1,10 +1,11 @@
 /***** DEFINITIONS *****/
 @background:                        #f0f0f0;
 @color:                             #403C3B;
-@alt_background:                    @color;
-@alt_color:                         @background;
-@accent:                            #315875;
-@link_blue:                         @accent;
+@alt_background:                    #FFFFFF;
+@alt_color:                         #A98060;
+@outlines:                          #AAAAAA;
+@link_blue:                         #315875;
+@focus:                             @link_blue + #666666;
 @passive:                           #94c15d;
 @active:                            #BF6F8C;
 
@@ -17,45 +18,46 @@
 
 /***** LAYOUT *****/
 
-#header                             {height: 54px; width: 100%; margin-bottom: 1em;
-                                     background: @alt_background; 
-                                     border-bottom: 6px solid @accent;}
+#header                             {height: 50px; width: 100%; margin-bottom: 1.5em;
+                                     background: @alt_background; border-bottom: 1px solid @outlines;}
 #header h1                          {margin: 0;}
     #logo                           {display: block; text-indent: -9999px;
-                                     height: 60px; width: 200px; background: url('logo.png');
+                                     height: 50px; width: 200px; background: url('logo.png');
                                      margin: 0px;}
 
 /***** NAVBAR *****/
-#navbar                             {height: 54px; border-left: 1px solid (@alt_color - #999999);}
+#navbar                             {height: 50px; border-left: 1px solid @outlines;}
 #navbar, #navbar ul                 {padding: 0; margin: 0; display: block; 
                                      background: @alt_background; color: @alt_color;}
-#navbar li                          {height: 60px; width: 100px; float: left;
-                                     list-style:none; z-index: 1000;}
-    #navbar li a                    {display: block; height: 21px;
-                                     padding: 33px 20px 0; color: @alt_color;
-                                     border-right: 1px solid (@alt_color - #999999);
-                                     text-decoration: none; font-family: Helvetica, Verdana, Tahoma Arial; font-size: 14px; text-transform: uppercase;}
-    #navbar .ribbon                 {height: 60px;}
-    #navbar .ribbon li              {float: left;}
-    #navbar .ribbon a               {width: 100px; padding: 0; position: relative; display: block; height: 60px; background: gray;  z-index: 100;}
+#navbar li                          {float: left; list-style:none;}
+    #navbar li.main                 {height: 50px; width: 100px;}
+        #navbar a.main              {display: block; height: 19px;
+                                     padding: 31px 20px 0; color: @alt_color;
+                                     border-right: 1px solid @outlines;
+                                     text-decoration: none; font-size: 14px; text-transform: uppercase;}
+    #navbar .submenu                {height: 60px; display:block;
+                                     padding-top: 12px; 
+                                     background: url('submenu-top.png') center top;}
+        #navbar .submenu ul         {height: 59px; border: 1px solid @outlines; border-top: none;}
+        #navbar .submenu a          { height: 40px; margin: 6px; padding: 3px 10px; display: block; 
+                                     text-decoration: none; text-transform: none; z-index: 100;
+                                     background: @alt_background; border: none;}
+        #navbar .submenu .icon      {height: 40px; width: 40px; padding-right: 10px; vertical-align: -35%;}
     #navbar li a.focused,
     #navbar li a:hover,
-    #navbar li a:focus              {background-color: (@alt_color - #999999); color:#FFF;}
+    #navbar li a:focus              {background-color: @focus; color:#FFF;}
   
-                                
+.tip-wrap                           {z-index: 1000; max-width: 200px;}
+    .tip-top                        {height:12px; background: url('tip-top.png') top left no-repeat;}
+    .tip                            {padding:10px; background: @alt_background; border:1px solid @outlines; border-top: none;}
 
 /***** STYLES *****/            
-body                                {background: url('header-bg.png') repeat-x top @background;
+body                                {background: @background;
                                      color: @color;}
 a                                   {color: @link_blue;}                   
 a.current                           {font-weight: bold; color: black; text-decoration: none;}
                                 
 /***** ELEMENTS *****/          
-
-.notification                       {width: 100%; margin-bottom: 1em; font-size: 14px;}
-    .notification p.inner           {padding: 1em; margin-bottom: 0;
-                                     color: @alt_color+#333333; background: @accent+#333333;}
-    .notification .close            {padding: 0 1em; display: block; float: right;}
 
 .pill                               {background: @alt_background; color: @alt_color; display: inline-block;
                                      padding: 0 1em; margin-bottom: 1em; border: 2px solid (@alt_background - #333333); .rounded_corners(1em);}
@@ -65,7 +67,7 @@ a.current                           {font-weight: bold; color: black; text-decor
 .browser .squish                    {max-height: 400px; overflow: auto; line-height: 1.5;}
     .browser table th               {background: @background - #222;}
     .browser table thead            {cursor: pointer;}
-    .browser .table-tr-hovered      {background: @accent + #666;}
+    .browser .table-tr-hovered      {background: purple;}
     .browser col.column-view        {width: 50px;}
     .browser col.column-date        {width: 100px;}
                                 

@@ -1,80 +1,111 @@
 #header {
-  height: 54px;
+  height: 50px;
   width: 100%;
-  margin-bottom: 1em;
-  background: #403c3b;
-  border-bottom: 6px solid #315875;
+  margin-bottom: 1.5em;
+  background: #ffffff;
+  border-bottom: 1px solid #aaaaaa;
 }
 #header h1 { margin: 0; }
 #logo {
   display: block;
   text-indent: -9999px;
-  height: 60px;
+  height: 50px;
   width: 200px;
   background: url('logo.png');
   margin: 0px;
 }
 #navbar {
-  height: 54px;
-  border-left: 1px solid #575757;
+  height: 50px;
+  border-left: 1px solid #aaaaaa;
 }
 #navbar {
   padding: 0;
   margin: 0;
   display: block;
-  background: #403c3b;
-  color: #f0f0f0;
+  background: #ffffff;
+  color: #a98060;
 }
 #navbar ul {
   padding: 0;
   margin: 0;
   display: block;
-  background: #403c3b;
-  color: #f0f0f0;
+  background: #ffffff;
+  color: #a98060;
 }
 #navbar li {
-  height: 60px;
-  width: 100px;
   float: left;
   list-style: none;
-  z-index: 1000;
 }
-#navbar li a {
+#navbar li.main {
+  height: 50px;
+  width: 100px;
+}
+#navbar a.main {
   display: block;
-  height: 21px;
-  padding: 33px 20px 0;
-  color: #f0f0f0;
-  border-right: 1px solid #575757;
+  height: 19px;
+  padding: 31px 20px 0;
+  color: #a98060;
+  border-right: 1px solid #aaaaaa;
   text-decoration: none;
-  font-family: Helvetica, Verdana, Tahoma Arial;
   font-size: 14px;
   text-transform: uppercase;
 }
-#navbar .ribbon { height: 60px; }
-#navbar .ribbon li { float: left; }
-#navbar .ribbon a {
-  width: 100px;
-  padding: 0;
-  position: relative;
-  display: block;
+#navbar .submenu {
   height: 60px;
-  background: gray;
+  display: block;
+  padding-top: 12px;
+  background: url('submenu-top.png') center top;
+}
+#navbar .submenu ul {
+  height: 59px;
+  border: 1px solid #aaaaaa;
+  border-top: none;
+}
+#navbar .submenu a {
+  height: 40px;
+  margin: 6px;
+  padding: 3px 10px;
+  display: block;
+  text-decoration: none;
+  text-transform: none;
   z-index: 100;
+  background: #ffffff;
+  border: none;
+}
+#navbar .submenu .icon {
+  height: 40px;
+  width: 40px;
+  padding-right: 10px;
+  vertical-align: -35%;
 }
 #navbar li a.focused {
-  background-color: #575757;
+  background-color: #97bedb;
   color: #ffffff;
 }
 #navbar li a:hover {
-  background-color: #575757;
+  background-color: #97bedb;
   color: #ffffff;
 }
 #navbar li a:focus {
-  background-color: #575757;
+  background-color: #97bedb;
   color: #ffffff;
 }
+.tip-wrap {
+  z-index: 1000;
+  max-width: 200px;
+}
+.tip-top {
+  height: 12px;
+  background: url('tip-top.png') top left no-repeat;
+}
+.tip {
+  padding: 10px;
+  background: #ffffff;
+  border: 1px solid #aaaaaa;
+  border-top: none;
+}
 body {
-  background: url('header-bg.png') repeat-x top #f0f0f0;
+  background: #f0f0f0;
   color: #403c3b;
 }
 a { color: #315875; }
@@ -83,36 +114,20 @@ a.current {
   color: black;
   text-decoration: none;
 }
-.notification {
-  width: 100%;
-  margin-bottom: 1em;
-  font-size: 14px;
-}
-.notification p.inner {
-  padding: 1em;
-  margin-bottom: 0;
-  color: #ffffff;
-  background: #648ba8;
-}
-.notification .close {
-  padding: 0 1em;
-  display: block;
-  float: right;
-}
 .pill {
-  background: #403c3b;
-  color: #f0f0f0;
+  background: #ffffff;
+  color: #a98060;
   display: inline-block;
   padding: 0 1em;
   margin-bottom: 1em;
-  border: 2px solid #0d0908;
+  border: 2px solid #cccccc;
   -moz-border-radius: 1em;
   -webkit-border-radius: 1em;
   border-radius: 1em;
 }
 .pill a { color: #97bedb; }
-.pill a:hover { color: #f0f0f0; }
-.pill a.current { color: #f0f0f0; }
+.pill a:hover { color: #a98060; }
+.pill a.current { color: #a98060; }
 .browser .squish {
   max-height: 400px;
   overflow: auto;
@@ -120,7 +135,7 @@ a.current {
 }
 .browser table th { background: #cecece; }
 .browser table thead { cursor: pointer; }
-.browser .table-tr-hovered { background: #97bedb; }
+.browser .table-tr-hovered { background: purple; }
 .browser col.column-view { width: 50px; }
 .browser col.column-date { width: 100px; }
 .mapper .card .tfield { border: 2px dashed #333333; }
@@ -135,7 +150,7 @@ a.current {
 }
 #shortcuts li {
   float: right;
-  color: #dfdfdf;
+  color: #986f4f;
 }
 .key {
   padding: 0 3px;
@@ -143,8 +158,8 @@ a.current {
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
   border-radius: 3px;
-  color: #dfdfdf;
-  background: #736f6e;
+  color: #986f4f;
+  background: #ffffff;
 }
 .card { width: 470px; }
 .card .front {

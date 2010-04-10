@@ -13,46 +13,96 @@ var Ribbon = new Class({
     initialize: function(id, options){
         this.navbar = $(id);
         this.setOptions(options);
-        this.slides = [];
+        this.submenus = [];
         this.navbar.getChildren('li').each(function(li, idx){
+            li.addClass('main');
+            li.getElement('a').addClass('main')
             var ul = li.getElement('ul');
             if (ul){
                 var div = new Element('div').inject(ul, 'before');
-                div.grab(ul);
-                ul.addClass('ribbon');
+                var submenu = new Element('div',{'class':'submenu'}).inject(div).grab(ul);
+                //Fix width of submenu
                 var totalWidth = 0;
+                ul.setStyle('width','1000px');
                 ul.getElements('li').each(function(innerLi,i2){
-                    totalWidth += innerLi.getSize().x;
+                    var size = innerLi.getComputedSize({'styles':['padding','border','margin']})
+                    totalWidth += size.totalWidth;
                 });
+                ul.setStyle('width',null);
+                ulSize = ul.getComputedSize();
+                totalWidth += (ulSize['border-left-width'] + ulSize['border-right-width']);
+                totalWidth = Math.ceil(totalWidth);
                 div.position({
-                    'relativeTo':li,
-                    'position':'centerBottom',
-                    'edge':'centerTop'
-                })
+                     'relativeTo':li,
+                     'position':'centerBottom',
+                     'edge':'centerTop'
+                });
                 div.setStyle('width',totalWidth+'px');
-                ul.setStyle('width',totalWidth+'px');
-                var slide = new Fx.Slide(ul, {'duration':200});
-                slide.hide();
-                this.slides.push(slide);
-                var a = li.getElement('a');
-                a.addEvent('mouseover',function(e){
-                    this.slides.each(function(s,i){s.hide();})
-                    this.wake();
-                    slide.slideIn();
+                submenu.setStyle('width',totalWidth+'px');
+                //Set tweens
+                submenu.set('slide', {'duration':200});
+                submenu.set('tween', {'duration':200})
+                submenu.slide('hide');
+                this.submenus.push(submenu);
+                //Add events to open and close submenus
+                var anchors = li.getElements('a');
+                anchors.addEvent('mouseover',function(e){
+                    $(e.target).addClass('focused');
+                    this.open(submenu);
+                }.bind(this));
+                anchors.addEvent('mouseout',function(e){
+                    $(e.target).removeClass('focused');
+                    this.delayClose();
                 }.bind(this));
             };
         }.bind(this));
+        var navbarTips = new Tips(this.navbar.getElements('ul a'), {
+            'fixed':true,
+            'offset':{'x':0,'y':50},
+            'text':'',
+            'showDelay':400,
+            'hideDelay':0,
+            'onShow':function(tt,h){
+                tt.set('tween',{'duration':200});
+                tt.fade('hide');
+                tt.fade('in');
+            },
+            'onHide':function(tt,h){
+                tt.fade('hide');
+            }
+        });
+        console.log($$('.tip-wrap'));
     },
     
-    wake: function(e){
+    open: function(submenu){
+        this.submenus.each(function(sm,i){
+            if (sm == submenu && !sm.get('slide').open){
+                sm.slide('in');
+                sm.fade('in');
+            }
+            if (sm != submenu && sm.get('slide').open){
+                sm.slide('out');
+                sm.fade('out');
+            }
+        });
+        if ($chk(this.timer)){
+            $clear(this.timer);
+            this.timer = null;
+        }
+    },
+    
+    delayClose: function(){
         if ($chk(this.timer)){
             $clear(this.timer);
         }
-        this.timer = this.sleep.delay(this.options.delay, this);
+        this.timer = this.closeAll.delay(this.options.delay, this);
     },
     
-    sleep: function(e){
-        this.slides.each(function(s,i){s.slideOut();});
+    closeAll: function(){
+        this.submenus.each(function(s,i){
+            s.slide('out');
+            s.fade('out');
+        });
     }
 })
 

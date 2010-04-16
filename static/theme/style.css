@@ -39,11 +39,12 @@
 #navbar li.main {
   height: 50px;
   width: 100px;
+  text-align: center;
 }
 #navbar a.main {
   display: block;
   height: 19px;
-  padding: 31px 20px 0;
+  padding: 31px 0px 0;
   color: #a98060;
   border-right: 1px solid #aaaaaa;
   text-decoration: none;
@@ -109,10 +110,85 @@ body {
   color: #403c3b;
 }
 a { color: #315875; }
-a.current {
+h3 .faded { color: #959190; }
+table { border: 1px solid #aaaaaa; }
+th {
+  background: #ffffff;
   font-weight: bold;
-  color: black;
+  border-bottom: 2px solid #666666;
+}
+.table-tr-odd { background: #f6f6f6; }
+input.title { font-size: 1em; }
+.button-bar {
+  background: #ffffff;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+}
+.button-bar.standalone { border: 1px solid #aaaaaa; }
+.button-bar ul {
+  margin: 0;
+  padding: 0;
+}
+.button-bar li {
+  list-style: none;
+  float: left;
+}
+.button-bar a {
+  padding: 5px 10px;
+  display: block;
+  height: 30px;
   text-decoration: none;
+  text-transform: uppercase;
+}
+.button-bar input {
+  padding: 5px 10px;
+  display: block;
+  height: 30px;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+.button-bar input {
+  background: #ffffff;
+  border: none;
+  font-size: 1em;
+  vertical-align: baseline;
+  line-height: 1.5;
+}
+.button-bar .icon {
+  width: 40px;
+  height: 30px;
+  display: inline-block;
+  margin-right: 5px;
+  background: url('icons-actions.png');
+  vertical-align: -35%;
+}
+.button-study .icon { background-position: 0 0; }
+.button-edit .icon { background-position: 0 -30px; }
+.button-cancel .icon { background-position: 0 -90px; }
+.button-save .icon { background-position: 0 -120px; }
+.box-control { border: 1px solid #aaaaaa; }
+.box-top {
+  height: 40px;
+  padding: 10px 10px 0 10px;
+}
+.box-control h3 {
+  float: left;
+  margin-bottom: 0;
+}
+.box-control h3 .icon {
+  height: 40px;
+  width: 40px;
+  padding-right: 10px;
+  vertical-align: -25%;
+  display: inline-block;
+  background: url('icon-box-medium.png') no-repeat;
+}
+.box-control .progress { float: right; }
+.box-divider {
+  height: 12px;
+  width: 100%;
+  background: url('box-divider.png');
 }
 .pill {
   background: #ffffff;
@@ -133,9 +209,7 @@ a.current {
   overflow: auto;
   line-height: 1.5;
 }
-.browser table th { background: #cecece; }
 .browser table thead { cursor: pointer; }
-.browser .table-tr-hovered { background: purple; }
 .browser col.column-view { width: 50px; }
 .browser col.column-date { width: 100px; }
 .mapper .card .tfield { border: 2px dashed #333333; }
@@ -225,33 +299,4 @@ a.current {
   left: 3px;
   top: 5px;
   z-index: 1;
-}
-.progressbar {
-  position: relative;
-  width: 180px;
-  height: 12px;
-  text-align: center;
-  line-height: 14px;
-  margin-bottom: 20px;
-  background: #efefef;
-  border: 2px solid #666666;
-  -moz-border-radius: 8px;
-  -webkit-border-radius: 8px;
-  border-radius: 8px;
-}
-.progressbar span {
-  z-index: 3;
-  position: relative;
-}
-.progressbar div {
-  z-index: 2;
-  position: absolute;
-  top: -1px;
-  left: -1px;
-  height: 12px;
-  background: #94c15d;
-  border: 1px solid #666666;
-  -moz-border-radius: 8px;
-  -webkit-border-radius: 8px;
-  border-radius: 8px;
 }

@@ -4,8 +4,10 @@
 @alt_background:                    #FFFFFF;
 @alt_color:                         #A98060;
 @outlines:                          #AAAAAA;
+@separator:                         #666666;
 @link_blue:                         #315875;
 @focus:                             @link_blue + #666666;
+
 @passive:                           #94c15d;
 @active:                            #BF6F8C;
 
@@ -16,7 +18,7 @@
   border-radius: @radius;
 }
 
-/***** LAYOUT *****/
+/***** HEADER *****/
 
 #header                             {height: 50px; width: 100%; margin-bottom: 1.5em;
                                      background: @alt_background; border-bottom: 1px solid @outlines;}
@@ -30,9 +32,9 @@
 #navbar, #navbar ul                 {padding: 0; margin: 0; display: block; 
                                      background: @alt_background; color: @alt_color;}
 #navbar li                          {float: left; list-style:none;}
-    #navbar li.main                 {height: 50px; width: 100px;}
+    #navbar li.main                 {height: 50px; width: 100px; text-align: center;}
         #navbar a.main              {display: block; height: 19px;
-                                     padding: 31px 20px 0; color: @alt_color;
+                                     padding: 31px 0px 0; color: @alt_color;
                                      border-right: 1px solid @outlines;
                                      text-decoration: none; font-size: 14px; text-transform: uppercase;}
     #navbar .submenu                {height: 60px; display:block;
@@ -52,12 +54,42 @@
     .tip                            {padding:10px; background: @alt_background; border:1px solid @outlines; border-top: none;}
 
 /***** STYLES *****/            
-body                                {background: @background;
-                                     color: @color;}
-a                                   {color: @link_blue;}                   
-a.current                           {font-weight: bold; color: black; text-decoration: none;}
+body                                {background: @background; color: @color;}
+a                                   {color: @link_blue;}   
+
+h3 .faded                           {color: @color + #555555;}
+
+table                               {border: 1px solid @outlines;}
+    th                              {background: @alt_background; font-weight:bold; border-bottom: 2px solid @separator;}
+    .table-tr-odd                   {background: @background + #060606;}
+    
+input.title {font-size:1em;}
+
                                 
 /***** ELEMENTS *****/          
+
+.button-bar                         {background: @alt_background;  height: 40px; margin: 0; padding: 0;}
+    .button-bar.standalone          {border: 1px solid @outlines;}
+    .button-bar ul                  {margin: 0; padding: 0;}
+    .button-bar li                  {list-style: none; float: left;}
+    .button-bar a, .button-bar input{padding: 5px 10px; display: block; height: 30px;
+                                     text-decoration: none; text-transform: uppercase;}
+    .button-bar input               {background: @alt_background; border: none; font-size: 1em;
+                                     vertical-align: baseline; line-height: 1.5;}
+    .button-bar .icon               {width: 40px; height: 30px; display: inline-block; margin-right: 5px;
+                                     background: url('icons-actions.png'); vertical-align: -35%;}
+    .button-study .icon             {background-position: 0 0;}
+    .button-edit .icon              {background-position: 0 -30px;}
+    .button-cancel .icon            {background-position: 0 -90px;}
+    .button-save .icon              {background-position: 0 -120px;}
+
+.box-control                        {border: 1px solid @outlines;}
+    .box-top                        {height: 40px; padding: 10px 10px 0 10px;}
+    .box-control h3                 {float: left; margin-bottom: 0;}
+        .box-control h3 .icon       {height: 40px; width: 40px; padding-right: 10px; vertical-align: -25%;
+                                     display: inline-block; background: url('icon-box-medium.png') no-repeat;}
+    .box-control .progress          {float: right;}
+    .box-divider                    {height: 12px; width: 100%; background: url('box-divider.png');}
 
 .pill                               {background: @alt_background; color: @alt_color; display: inline-block;
                                      padding: 0 1em; margin-bottom: 1em; border: 2px solid (@alt_background - #333333); .rounded_corners(1em);}
@@ -65,9 +97,7 @@ a.current                           {font-weight: bold; color: black; text-decor
     .pill a:hover, .pill a.current  {color: @alt_color;}
                                 
 .browser .squish                    {max-height: 400px; overflow: auto; line-height: 1.5;}
-    .browser table th               {background: @background - #222;}
     .browser table thead            {cursor: pointer;}
-    .browser .table-tr-hovered      {background: purple;}
     .browser col.column-view        {width: 50px;}
     .browser col.column-date        {width: 100px;}
                                 
@@ -110,11 +140,3 @@ a.current                           {font-weight: bold; color: black; text-decor
 .cardsets ul li .card               {position: absolute; left: 3px; top: 5px;
                                      z-index: 1;}
                                 
-                                
-.progressbar                        {position:relative; width: 180px; height: 12px;
-                                     text-align: center; line-height: 14px; margin-bottom: 20px;
-                                     background: #efefef; border: 2px solid #666; .rounded_corners(8px);}
-.progressbar span                   {z-index: 3; position: relative;}
-.progressbar div                    {z-index: 2; position: absolute; top: -1px; left: -1px;
-                                     height: 12px;
-                                     background: @passive; border:1px solid #666; .rounded_corners(8px);}

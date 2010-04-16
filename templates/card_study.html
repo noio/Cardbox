@@ -22,10 +22,8 @@
     
     <div class='box-info' style='display:none'>
         <h4>This Box</h4>
-        <p>total time studied: {{box.time_studied|timedelta}}</p>
-        <div class='progressbar'>
-            <span>{{box.percentage_learned|floatformat}}%</span>
-            <div style='width:{%widthratio box.percentage_learned 100 180%}px;'></div>
-        </div>
+        <p>Total time studied: {{box.time_studied|timedelta}}</p>
+        <p>Progress: {{box.percentage_learned|floatformat}}%</p>
+
     </div>
 </div>

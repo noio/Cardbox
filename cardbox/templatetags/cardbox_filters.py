@@ -24,3 +24,7 @@ def page_name(value, arg=False):
     else:
         value = value.replace(':',': ')
     return ' '.join([w.capitalize() for w in value.split('_')])
+    
+@register.filter
+def dictkey(d, k):
+    return d.get(k, None)

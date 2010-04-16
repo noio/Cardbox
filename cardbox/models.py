@@ -30,6 +30,10 @@ import tools.textile as textile
 # Local Imports
 
 
+### Exceptions ###
+class PageException(Exception):
+    pass
+
 
 ### Abstract Models ###
     
@@ -38,24 +42,35 @@ class Page(db.Model):
     modified = db.DateTimeProperty(auto_now=True)
     editor = db.UserProperty(auto_current_user=True)
     revision_number = db.IntegerProperty(default=1)
+    renamed_to = db.StringProperty()
+    
     meta_keys = {}
     
     @classmethod
     def get_by_name(cls, name):
         """ Returns a page subclass with the given name, creates one if required.
         """
-        if re.match("^factsheet:", name) and cls in [Factsheet, Page]:
-            kind = Factsheet
-        elif re.match("^template:", name) and cls in [Template, Page]:
-            kind = Template
-        elif re.match("^scheduler:", name) and cls in [Scheduler, Page]:
-            kind = Scheduler
+        if cls == Page:
+            raise Error('Page is not a storable model.')
+        if name is None:
+            page = cls(key_name='none')
+        else:
+            page = cls.get_by_key_name(name)
+        if page is None:
+            page = cls(key_name=name)
+            page._new_name = name
+        return page
+        
+    @classmethod
+    def validate_title(cls, title):
+        REMOVE = r'[ \_\-:;]+'
+        title = re.sub(REMOVE,'_',title).lower()
+        VALID_TITLE = r'^[a-z]+([a-z0-9]+)*$'
+        matched = re.match(VALID_TITLE, title)
+        if matched:
+            return title
         else:
             return None
-        page = kind.get_by_key_name(name)
-        if page is None:
-            page = kind(key_name=name)
-        return page
     
     def __init__(self, is_revision=False, **kwds):
         self._edited = None
@@ -69,17 +84,24 @@ class Page(db.Model):
     def title(self):
         """ Returns a formatted title for this page. 
         """
+        if not self.is_saved():
+            return ''
         nm = self.key().name()
-        nm = nm.split(':')[1]
+        if(nm.split(':')[0] in ['factsheet','template','scheduler']):
+            nm = nm.split(':')[-1]
         nm = nm.replace(':',':_')
         nm = ' '.join([w.capitalize() for w in nm.split('_')])
         return nm
+    
+    @property
+    def kind_name(self):
+        return self.__class__.__name__.lower()
         
     @property
     def url(self):
         """ Returns the view-url for this page. 
         """
-        return reverse('cardbox.views.page_view',args=[self.key().name()])
+        return reverse('cardbox.views.page_view',kwargs={'kind':self.kind_name,'name':self.key().name()})
         
     def edit(self, new_content):
         self._edited = new_content
@@ -117,14 +139,14 @@ class Page(db.Model):
         try:
             obj = yaml.safe_load(t)
             self._validate(obj)
-            meta = obj['meta'] if 'meta' in obj else {}
+            meta = obj['meta'] if (obj and 'meta' in obj) else {}
             self._set_meta_data(meta)
         except yaml.parser.ParserError, e:
             self._errors.append({'message':'YAML syntax error.','content':e.problem_mark})
-        except Exception, e:
+        except PageException, e:
             logging.exception(self._errors)
             self._errors.append({'message':'Error in %s format.'% self.__class__.__name__,
-                                 'content':mark_safe(e)})
+                                 'content':(e.args[0])})
     
     def _validate(self, parsed):
         self._parsed = parsed
@@ -142,6 +164,9 @@ class Page(db.Model):
             r.put()
             page.put()
         
+        #Check title before saving
+        if self.key().name() == 'none':
+            raise Exception("Cannot save unnamed page.")
         if self._is_revision:
             raise Exception("Cannot save revision.")
         if self.content != '' and self.content != self._edited:
@@ -157,7 +182,7 @@ class Page(db.Model):
             if key in meta and hasattr(self,attr_name):
                 value = meta[key]
                 if not re.match(r'^[a-zA-Z0-9 ]+$',value):
-                    raise Exception("Meta value for '%s' can only contain letters, numbers and spaces."%m)
+                    raise PageException("Meta value for '%s' can only contain letters, numbers and spaces."%m)
                 value = re.sub(r' +',' ',value).lower()
                 setattr(self, attr_name, value)
         if len(self.meta_keys.keys()):
@@ -235,10 +260,7 @@ class PageProperty(db.Property):
    
     def validate(self, value):
         if isinstance(value, basestring):
-            if value.split(':')[0] != self.reference_class.kind().lower():
-                raise BadValueError("Key %s is not allowed for this kind (%s)." %
-                            (value, self.reference_class.kind()))
-        return value
+            return value
         if value is not None and not value.key().name():
             raise BadValueError(
             '%s instance must have a complete key before it can be stored as a '
@@ -296,32 +318,37 @@ class Revision(db.Model):
     number = db.IntegerProperty(required=True)
     
 class Factsheet(Page):
-    meta_keys = {'subject':'meta_subject'}
+    kind_name = 'list'
+    meta_keys = {'subject':'meta_subject',
+                 'book':'meta_book'}
     meta_subject = db.StringProperty()
+    meta_book = db.StringProperty()
     
     def _validate(self, yaml_obj):
         if yaml_obj is None:
-            raise Exception('Factsheet is empty.')
+            raise PageException('The list is empty.')
         columns = yaml_obj['columns']
         rows = yaml_obj['rows']
         d = {}
+        row_order =[]
         for index,i in enumerate(rows):
             if isinstance(rows,dict):
                 row_key, row = str(i), rows[i]
             else:
                 if not isinstance(i[0],basestring):
-                    raise Exception("Incorrect format in [%s]"%u','.join([unicode(b) for b in i]))
+                    raise PageException("Incorrect format in [%s]"%u','.join([unicode(b) for b in i]))
                 row_key, row = uri_b64encode(i[0].encode('utf-8')), i
             if not re.match(r'^[A-Za-z0-9\.=\-_]+$',row_key):
-                raise Exception("Error in row %s (%s). Row names can only contain letters, numbers and . (period)" % (row_key,u','.join([unicode(b) for b in row])))
+                raise PageException("Error in row %s (%s). Row names can only contain letters, numbers and . (period)" % (row_key,u','.join([unicode(b) for b in row])))
             if len(columns) != len(row):
-                raise Exception("Row %s (%s) has wrong length." % (row_key,u','.join([unicode(b) for b in row])))
+                raise PageException("Row %s (%s) has wrong length." % (row_key,u','.join([unicode(b) for b in row])))
+            row_order.append(row_key)
             d[row_key] = dict(zip(columns, row))
-        self._parsed = {'rows':d,'columns':columns}
+        self._parsed = {'rows':d,'order':row_order,'columns':columns}
         
     def html_preview(self):
         if not self.errors():
-            return render_to_string('factsheet.html',{'rows':self.rows()})
+            return render_to_string('factsheet.html',{'order':self.parsed()['order'],'rows':self.rows()})
         else:
             return "No preview"
         
@@ -341,11 +368,13 @@ class Template(Page):
     DJANGO_CONTROL_TAG = re.compile(r'{%.+%}')
     
     def _validate(self, yaml_obj):
-        front_template = yaml_obj['front']
-        back_template = yaml_obj['back']
+        if not isinstance(yaml_obj, dict):
+            raise PageException('A template cannot be empty.')
+        front_template = yaml_obj.get('front','')
+        back_template = yaml_obj.get('back','')
         if(self.DJANGO_CONTROL_TAG.search(front_template) or 
            self.DJANGO_CONTROL_TAG.search(back_template)):
-           raise Exception('Control tags ( {% tag %} ) are not allowed.')
+           raise PageException('Control tags ( {% tag %} ) are not allowed.')
         background = yaml_obj.get('background', '#fff9cc')
         m = set(self.DJANGO_VARIABLE_TAG.findall(front_template)).union(
             set(self.DJANGO_VARIABLE_TAG.findall(back_template)))
@@ -410,7 +439,6 @@ class Cardset(db.Model):
                             factsheet=self.factsheet,
                             card_id=card_id,
                             mapping=self.mapping)
-       
     
     def random_card(self):
         """ Renders a random card from connected factsheet. Renders a 'None'

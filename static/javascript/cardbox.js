@@ -71,7 +71,6 @@ var Ribbon = new Class({
                 tt.fade('hide');
             }
         });
-        console.log($$('.tip-wrap'));
     },
     
     open: function(submenu){
@@ -115,7 +114,7 @@ var BrowseTable = new Class({
     options:{
         kind: null,
         actions: ['select'],
-        allowedFilters: {'factsheet':['subject']},
+        allowedFilters: {'list':['subject']},
         filters: {},
         showControl: true
     },
@@ -133,7 +132,6 @@ var BrowseTable = new Class({
             'sortReverse':true,
             'allowMultiSelect':false
         });
-       
     },
     
     update: function(opts){
@@ -145,7 +143,7 @@ var BrowseTable = new Class({
     refresh: function(){
         this.table.element.spin();
         var dataRequest = new Request.JSON({
-            url: "/browse_data/"+this.options.kind.toLowerCase(), 
+            url: "/"+this.options.kind.toLowerCase()+'/all/data', 
             onSuccess: function(data){
                 this.addData(data);
             }.bind(this)
@@ -239,7 +237,6 @@ var BrowseTable = new Class({
  * values of the factsheet go in which fields on the template
  */
 var MappingSelector = new Class({
-    
     initialize: function(id, field){
         this.element = $(id);
         this.element.addClass('mapper');
@@ -249,18 +246,17 @@ var MappingSelector = new Class({
     },
     
     setValues: function(values){
-        this.values = ['None'].combine(values);
+        this.values = ['None'].combine(values.erase(''));
         this.redraw();
     },
     
     setTemplate: function(template_id){
         var rq = new Request.HTML({
+            'update':this.element,
             'onComplete':function(t,e,h,j){
-                this.element.empty();
-                this.element.adopt(t);
                 this.redraw();
             }.bind(this)
-        }).get('/template_preview/'+template_id);
+        }).get('/page/'+template_id+'/preview');
     },
     
     dump: function(){
@@ -283,7 +279,8 @@ var MappingSelector = new Class({
             elem.addEvent('click',function(e){
                 var current = this.values.indexOf(elem.get('html'));
                 var next = (current+1) % this.values.length;
-                elem.set('html',this.values[next]);
+                var nextVal = this.values[next];
+                elem.set('html',nextVal);
                 this.fieldChanged(elem);
             }.bind(this));
             elem.addEvents({
@@ -341,7 +338,7 @@ var StudyClient = new Class({
         }));
         this.currentCard = null;
         this.cardRequest = new Request.HTML({
-            url:'/next_card/'+this.box_id,
+            url:'/box/'+this.box_id+'/next_card',
             method:'get',
             noCache:true
         });

@@ -6,15 +6,22 @@
         
         {% if request.user %}
             {% for box in request.user.my_boxes %}
-                <div class="span-14 append 2">
-                    <h3>{{box.title}}</h3>
-                    <p><a href="{% url cardbox.views.study box.key.id %}">study</a> <a href="{% url cardbox.views.box_edit box.key.id %}">edit</a></p>
-                    <div class='progressbar'>
-                        <span>{{box.percentage_learned|floatformat}}%</span>
-                    <div style='width:{%widthratio box.percentage_learned 100 180%}px;'></div>
+                <div class="span-14 append 4">
+                    <div class='box-control'>
+                        <div class='box-top'>
+                            <h3><span class='icon'></span>{{box.title}}</h3>
+                            <div class='progress'>
+                                <h3>{{box.percentage_learned|floatformat}}%</h3>
+                            </div>
+                        </div>
+                        <div class='box-divider'></div>
+                        <ul class='button-bar'>
+                            <li class='button-study'><a href="{% url cardbox.views.study box.key.id %}"><span class='icon'></span>study</a></li>
+                            <li class='button-edit'><a href="{% url cardbox.views.box_edit box.key.id %}"><span class='icon'></span>edit</a></li>
+                        </ul>
                     </div>
                 </div>
-                <hr/>
+                <hr class='space'/>
             {% endfor %}
             <div class='span-18 last'>
                 <a href="{%url cardbox.views.box_create%}">new box</a>
@@ -28,7 +35,7 @@
         <h4>Recent Activity</h4>
         <ul>
             {% for factsheet in factsheets %}
-            <li>{{factsheet.title}} <a href='{%url cardbox.views.page_edit factsheet.key.name %}'>edit</a></li>
+            <li>{{factsheet.title}} <a href='{%url cardbox.views.page_edit kind="list" name=factsheet.key.name %}'>edit</a></li>
             {% endfor %}
         </ul>
         <h4>Contact the Developer</h4>

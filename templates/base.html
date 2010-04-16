@@ -32,15 +32,15 @@
                         <ul>
                             <li><a title='Create a new box. A box holds the cards that you can study.' href="{% url cardbox.views.box_create %}"><img class='icon' src='{{media_url}}theme/icon-box-medium.png'/>Box</a></li>
                             <li><a title='Create a new cardset by combining a list and a template. Cardsets are packs of cards with a similar topic.' href="{% url cardbox.views.cardset_create %}"><img class='icon' src='{{media_url}}theme/icon-cardset-medium.png'/>Cardset</a></li>
-                            <li><a title='Create a new list. Lists contain the words that show up on cards.' href='{% url cardbox.views.page_create "factsheet" %}'><img class='icon' src='{{media_url}}theme/icon-list-medium.png'/>List</a></li>
-                            <li><a title='Create a template. A template determines what goes where on a card, and what it looks like. ' href='{% url cardbox.views.page_create "template" %}'><img class='icon' src='{{media_url}}theme/icon-template-medium.png'/>Template</a></li>
+                            <li><a title='Create a new List. Lists contain the words that show up on cards.' href='{% url cardbox.views.page_create kind="list" %}'><img class='icon' src='{{media_url}}theme/icon-list-medium.png'/>List</a></li>
+                            <li><a title='Create a template. A template determines what goes where on a card, and what it looks like. ' href='{% url cardbox.views.page_create kind="template" %}'><img class='icon' src='{{media_url}}theme/icon-template-medium.png'/>Template</a></li>
                         </ul>
                     </li>
                     <li><a href='#' onClick='return false;'>browse</a>
                         <ul>
-                            <li><a title='Browse through cardsets created by you and others.' href="{% url cardbox.views.browse %}#cardset"><img class='icon' src='{{media_url}}theme/icon-cardset-medium.png'/>Cardsets</a></li>
-                            <li><a title='Browse through all available lists.' href='{% url cardbox.views.browse %}#factsheet'><img class='icon' src='{{media_url}}theme/icon-list-medium.png'/>Lists</a></li>
-                            <li><a title='Find the template you are looking for.' href='{% url cardbox.views.browse %}#template'><img class='icon' src='{{media_url}}theme/icon-template-medium.png'/>Templates</a></li>
+                            <li><a title='Browse through cardsets created by you and others.' href='{% url cardbox.views.browse kind="cardset"%}'><img class='icon' src='{{media_url}}theme/icon-cardset-medium.png'/>Cardsets</a></li>
+                            <li><a title='Browse through all available lists.' href='{% url cardbox.views.browse kind="list"%}'><img class='icon' src='{{media_url}}theme/icon-list-medium.png'/>Lists</a></li>
+                            <li><a title='Browse through all available templates.' href='{% url cardbox.views.browse kind="template"%}'><img class='icon' src='{{media_url}}theme/icon-template-medium.png'/>Templates</a></li>
                         </ul>
                     </li>
                     <li>
@@ -53,9 +53,6 @@
                     
                     {% endif %}
                 </ul>
-            </div>
-            <div class='span-6 last' id='shortcuts'>
-                <ul></ul>
             </div>
             {% endblock header %} 
         </div>
@@ -78,7 +75,7 @@
                
             });          
             var ribbon = new Ribbon('navbar');
-            KeyBinder.setInterface('shortcuts'); 
+            //KeyBinder.setInterface('shortcuts'); 
         });
     </script>
 </body>

@@ -8,16 +8,26 @@ INTERFACE
 =========
 TODO: picker for scheduler
 CHANGED: Meta data for pages
-TODO: Changeable name on page-creation page
+TODO: Page renaming
+TODO: Remove silly namespaces from pages
 CHANGED: Mapping makkelijker invoeren.
 CHANGED: total time studied for each box
 CHANGED: Queue the cards to learn to avoid page loading time.
 
 BACK END
 ========
-TODO: Restructure URLS
+CHANGED: Restructure URLS
 CHANGED: Fix firefox
 CHANGED: Create cleaner for cardprogress entities
 CHANGED: Cards repeating
 CHANGED: Betere organisatie voor keyboard shortcuts en indicators
 CHANGED: Empty template spots with &nbsp;
+
+MIGRATION
+=========
+TODO: Change page creation to set .name and check for uniqueness
+TODO: Change page to use .name and .title properties everywhere
+TODO: For all pages, store key_name as .name property
+TODO: Change PageProperty to store whole Key in stead of Key.name()
+TODO: For all cardsets/boxes, update PageProperties
+TODO: Change get_by_name to work with .name property

@@ -1,10 +1,22 @@
-<table><tbody>
-{% for row_id, row in rows.items %}
-<tr>
-    {% for k,v in row.items %}
-    <td>{{k}}: {{v}}</td>
+{% load cardbox_filters %}
+
+<table class='factsheet-preview'><tbody>
+    <thead>
+        <tr>
+            {% for k in rows.values.0.keys %}
+            <th>{{k}}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+    {% for row_id in order %}
+    {% with rows|dictkey:row_id as row %}
+    <tr class='{% cycle "table-tr-odd" " "%}'>
+        {% for v in row.values %}
+        <td>{{v}}</td>
+        {% endfor %}
+    </tr>
+    {% endwith %}
     {% endfor %}
-</tr>
-{% endfor %}
-</tbody>
+    </tbody>
 </table>

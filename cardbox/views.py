@@ -38,14 +38,11 @@ import tools.textile as textile
 # Local Imports
 import models
 
-### Form classes ###
+### Statics ###
 
-class CardsetForm(forms.Form):
-    title = forms.CharField(widget=forms.TextInput(attrs={'class':'title'}))
-    factsheet = forms.CharField()
-    template = forms.CharField()
-    mapping = forms.CharField(widget=forms.Textarea())
-    
+page_kinds = {'list':models.Factsheet,
+              'template':models.Template,
+              'scheduler':models.Scheduler}
 
 ### Decorators for Request Handlers ###
 
@@ -83,41 +80,43 @@ def frontpage(request):
     factsheets = models.Factsheet.all().order('-modified').fetch(10)
     return respond(request,'front.html', {'factsheets':factsheets})
     
-def page_create(request, pagetype):
-    if pagetype not in ['factsheet','template','scheduler']:
-        return HttpResponseForbidden('Type not recognized')
-    if request.method != 'POST':
-        return respond(request, 'page_create.html',{'pagetype':pagetype})
-        
-    title = request.POST['title']
-    name = re.sub(r'\s+','_',title.lower())
-    p = models.Page.get_by_name(pagetype+':'+name)
-    if p is None:
-        error = 'Invalid name. Please use only A-Z, 0-9 and spaces.'
-        return respond(request, 'page_create.html',{'pagetype':pagetype,'error':error})
-    return HttpResponseRedirect(reverse('cardbox.views.page_edit',args=[p.key().name()]))
+@login_required
+def page_create(request, kind):
+    return page_edit(request, kind)
+   
+def page_view(request, kind, name):
+    model = page_kinds[kind]
+    page = model.get_by_name(name)
+    return respond(request,'page_view.html', {'page':page})
 
-def page_view(request, pagename):
-    fs = models.Page.get_by_name(pagename)
-    return respond(request,'page.html', {'editable':False,
-                                         'page':fs})
+def page_preview(request, kind, name):
+    model = page_kinds[kind]
+    page = model.get_by_name(name)
+    return HttpResponse(page.html_preview())
     
 @login_required
-def page_edit(request, pagename):
-    fs = models.Page.get_by_name(pagename)
-    if fs is None:
-        return HttpResponseForbidden('Name not allowed.')
+def page_edit(request, kind, name=None):
+    model = page_kinds[kind]
+    if name is None:
+        page = model()
+        if request.method == 'POST' and 'title' in request.POST:
+            title = request.POST['title']
+            name = model.validate_title(title)
+            if name is None:
+                name_error = """'%s' is not a valid title. Please use only letters, numbers and spaces. 
+                The title cannot start or end with a space either.""" % title
+            else:
+                name_error = None
+                page = model.get_by_name(name)
+    else:
+        page = model.get_by_name(name)
     if request.method == 'POST':
         content = request.POST['content']
-        fs.edit(content)
-        return HttpResponseRedirect(reverse('cardbox.views.page_edit',args=[pagename]))
-    return respond(request,'page.html',{'editable':True,
-                                        'page':fs})
-
-def page_revision(request, pagename, revision):
-    fs = models.Page.get_by_name(pagename)
-    fs = fs.revision(int(revision))
-    return respond(request,'page.html',{'page':fs})
+        page.edit(content)
+        if page.errors() or name_error:
+            return respond(request, 'page_edit.html',{'page':page,'errors':page.errors(),'name_error':name_error})
+        return HttpResponseRedirect(reverse('cardbox.views.page_view',kwargs={'kind':kind,'name':name}))
+    return respond(request,'page_edit.html', {'page':page})
 
 @login_required
 def cardset_create(request):
@@ -141,10 +140,6 @@ def cardset_edit(request, set_id=None):
         cardset.put()
         return HttpResponseRedirect(reverse('cardbox.views.cardset_view',args=[cardset.key().id()]))
     return respond(request, 'cardset_edit.html',{'cardset':cardset, 'factsheets':factsheets,'templates':templates})
-
-def template_preview(request, template_name):
-    template = models.Template.get_by_name(template_name)
-    return HttpResponse(template.html_preview())
 
 @login_required
 def box_create(request):
@@ -189,9 +184,9 @@ def next_card(request, box_id):
     card = box.card_to_study()
     return respond(request, 'card_study.html',{'box':box,'card':card})
 
-def browse(request):
+def browse(request, kind):
     #print request.GET.items()
-    return respond(request, 'browse.html')
+    return respond(request, 'browse.html',{'kind':kind})
     
 @login_required
 def card_view(request, box_id, card_id):
@@ -199,25 +194,11 @@ def card_view(request, box_id, card_id):
     card = models.Card.get_by_key_name(card_id, parent=box)
     print card.stats()
     return respond(request, 'card_view.html', {'card':card})
-    
-def autocomplete(request, kind, field):
-    allowed_kinds = {'factsheet':{'model':models.Factsheet,
-                                  'fields':{'subject':'meta_subject'}}}
-    d = allowed_kinds.get(kind, {})
-    model = d.get('model',None)
-    field_name = d.get('fields',{}).get(field,None)
-    value = request.POST['value']
-    if model and field_name and value:
-        q = model.all().filter(field_name + ' >=',value)
-        q.filter(field_name + ' <', unicode(value)+u"\ufffd")
-        entities = q.fetch(10)
-        s = set([getattr(e, field_name) for e in entities])
-        return HttpResponse(simplejson.dumps(list(s)), mimetype='application/json')
 
 def browse_data(request,kind):
     """ Returns a json object with a list of data of the requested kind
     """
-    if kind == 'factsheet':
+    if kind == 'list':
         model = models.Factsheet
     elif kind == 'template':
         model = models.Template

@@ -5,7 +5,7 @@
         {%if error %}<p class='error'>{{error}}</p>{%endif%}
         <form class='inline' action='{% url cardbox.views.page_create pagetype %}' method="post">
             <div class="span-24">
-                Create a <strong>{{pagetype}}</strong> titled:
+                Create a <strong>{%ifequal pagetype 'factsheet'%}list{%else%}{{pagetype}}{%endifequal%}</strong> titled:
             </div>
             <div class='span-24'>
                 <input type='text' class='title' name='title' value='title'/>

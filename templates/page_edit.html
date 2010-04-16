@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="span-24 last">
+        {% if page.is_saved %}
+        <form id='page-edit-form' action="{% url cardbox.views.page_edit kind=page.kind_name name=page.key.name %}" method="post">
+        <h3><span class='faded'>Editing {{page.kind_name}}: </span>{{page.title}}</h3>
+        {% else %}
+        <form id='page-edit-form' action="{% url cardbox.views.page_create kind=page.kind_name %}" method="post">
+        <h3><span class='faded'>Creating a {{page.kind_name}} named: </span><input class='title' name='title' type='text' value='{{page.title}}'></h3>
+        {% if name_error %} <div class='error'>{{name_error}}</div>{%endif%}
+        {% endif %}
+        {% ifequal page.kind_name "list" %}
+        <div class='help'>
+            <p>Create a list as follows. Start out with defining what columns you will enter. For example, for a dutch list including part
+                of speech, type:
+            <pre>columns: [dutch, english, pos]</pre>
+            Below that, enter your list, each line starting with a space and a dash (-), like so:
+            <pre>columns: [dutch, english, pos]
+ -[fiets, bicycle, noun]
+ -[fietsen, to cycle, verb]</pre>
+            If a word or sentence contains any special characters like comma's or colons, wrap it in quotes.
+            <pre> -[breed, "wide, large", adjective]</pre>
+            Just click "Save Changes" when you are done!
+            </p>
+        </div>
+        {% endifequal %}
+        {% for error in errors %}
+            <div class='error'>
+                <h5>{{error.message}}</h5>
+                <pre>{{error.content}}</pre>
+            </div>
+        {% endfor %}
+        <textarea name='content' style="width:938px; height:500px; font-family:Monaco,Courier,monospace">{{page.source}}</textarea>
+        <div class='button-bar standalone'><ul>
+        {% if page.is_saved %}<li><a class='button-cancel' href='{% url cardbox.views.page_view kind=page.kind_name name=page.key.name %}'><span class='icon'></span>Cancel</a></li>{%endif%}
+        <li><a class='button-save' href='#' onClick='$("page-edit-form").submit()'><span class='icon'></span>Save Changes</a></li>
+        </ul></div>
+        </for
+    </div>
+
+{% endblock %}

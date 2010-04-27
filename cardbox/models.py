@@ -39,10 +39,10 @@ class PageException(Exception):
     
 class Page(db.Model):
     content = db.TextProperty(default='')
+    name = db.StringProperty()
     modified = db.DateTimeProperty(auto_now=True)
     editor = db.UserProperty(auto_current_user=True)
     revision_number = db.IntegerProperty(default=1)
-    renamed_to = db.StringProperty()
     
     meta_keys = {}
     
@@ -51,26 +51,12 @@ class Page(db.Model):
         """ Returns a page subclass with the given name, creates one if required.
         """
         if cls == Page:
-            raise Error('Page is not a storable model.')
-        if name is None:
-            page = cls(key_name='none')
+            raise Exception('Page is not a storable model.')
         else:
-            page = cls.get_by_key_name(name)
+            page = cls.all().filter('name =',name).get()
         if page is None:
-            page = cls(key_name=name)
-            page._new_name = name
+            raise Exception('Page "%s" not found'%name)
         return page
-        
-    @classmethod
-    def validate_title(cls, title):
-        REMOVE = r'[ \_\-:;]+'
-        title = re.sub(REMOVE,'_',title).lower()
-        VALID_TITLE = r'^[a-z]+([a-z0-9]+)*$'
-        matched = re.match(VALID_TITLE, title)
-        if matched:
-            return title
-        else:
-            return None
     
     def __init__(self, is_revision=False, **kwds):
         self._edited = None
@@ -84,27 +70,32 @@ class Page(db.Model):
     def title(self):
         """ Returns a formatted title for this page. 
         """
-        if not self.is_saved():
-            return ''
-        nm = self.key().name()
+        nm = self.name if self.name else ''
         if(nm.split(':')[0] in ['factsheet','template','scheduler']):
             nm = nm.split(':')[-1]
         nm = nm.replace(':',':_')
         nm = ' '.join([w.capitalize() for w in nm.split('_')])
         return nm
+        
+    def get_name(self):
+        if self.name is not None:
+            return self.name
+        else:            
+            return self.key().name()
     
     @property
     def kind_name(self):
         return self.__class__.__name__.lower()
-        
+    
     @property
     def url(self):
         """ Returns the view-url for this page. 
         """
-        return reverse('cardbox.views.page_view',kwargs={'kind':self.kind_name,'name':self.key().name()})
+        return reverse('cardbox.views.page_view',kwargs={'kind':self.kind_name,'name':self.name})
         
-    def edit(self, new_content):
+    def edit(self, new_content, new_title=None):
         self._edited = new_content
+        self._new_title = new_title if new_title is not None else self.key().name()
         self._validate_main()
         if not self._errors:
             self._save()
@@ -123,6 +114,11 @@ class Page(db.Model):
             if getattr(self, attr_name):
                 s.append('%s: %s' % (key, getattr(self, attr_name)))
         return ', '.join(s)
+        
+    def json(self):
+        return simplejson.dumps({'name':self.name,
+                                 'content':self.content
+                                })
         
     def source(self):
         return self._edited if self._edited is not None else self.content
@@ -144,9 +140,36 @@ class Page(db.Model):
         except yaml.parser.ParserError, e:
             self._errors.append({'message':'YAML syntax error.','content':e.problem_mark})
         except PageException, e:
-            logging.exception(self._errors)
-            self._errors.append({'message':'Error in %s format.'% self.__class__.__name__,
+            self._errors.append({'message':'Error in %s format.'% self.kind_name,
                                  'content':(e.args[0])})
+            logging.info(self._errors)
+                                 
+        #Validate title
+        if hasattr(self, '_new_title') and self._new_title is not None:
+            try:
+                self._validate_title(self._new_title)
+            except PageException, e:
+                self._errors.append({'message':'Error in title.',
+                                     'content':(e.args[0])})
+                logging.info(self._errors)
+    
+    def _validate_title(self, title):
+        REMOVE = r'[ \_\-:;]+'
+        VALID_TITLE = r'^[a-z]+(\_[a-z0-9]+)*$'
+        if len(title) < 5:
+            raise PageException("Title is too short.")
+        name = re.sub(REMOVE,'_',title).lower()
+        if self.name == name:
+            return
+        matched = re.match(VALID_TITLE, name)
+        if not matched:
+            raise PageException("Title (%s / %s) can only contain letters, numbers, and spaces."%(title,name))
+        q = self.__class__.all()
+        q.filter('name', name)
+        if q.fetch(1):
+            raise PageException("There is already a page with this title.")
+        self.name = name
+        return name
     
     def _validate(self, parsed):
         self._parsed = parsed
@@ -176,7 +199,7 @@ class Page(db.Model):
         else:
             self.content = self._edited
             self.put()
-        
+    
     def _set_meta_data(self, meta):
         for key, attr_name in self.meta_keys.items():
             if key in meta and hasattr(self,attr_name):
@@ -247,6 +270,9 @@ class PageProperty(db.Property):
             if isinstance(value, basestring):
                 setattr(model_instance, self.__id_attr_name(), value)
                 setattr(model_instance, self.__resolved_attr_name(), None)
+            elif isinstance(value, db.Key):
+                setattr(model_instance, self.__id_attr_name(), value)
+                setattr(model_instance, self.__resolved_attr_name(), None)            
             else:
                 setattr(model_instance, self.__id_attr_name(), value.key().name())
                 setattr(model_instance, self.__resolved_attr_name(), value)
@@ -259,9 +285,10 @@ class PageProperty(db.Property):
         return getattr(model_instance, self.__id_attr_name())
    
     def validate(self, value):
+        return value
         if isinstance(value, basestring):
             return value
-        if value is not None and not value.key().name():
+        if value is not None and not isinstance(value, db.Key) and not value.key():
             raise BadValueError(
             '%s instance must have a complete key before it can be stored as a '
             'reference' % self.reference_class.kind())
@@ -376,15 +403,24 @@ class Template(Page):
            self.DJANGO_CONTROL_TAG.search(back_template)):
            raise PageException('Control tags ( {% tag %} ) are not allowed.')
         background = yaml_obj.get('background', '#fff9cc')
-        m = set(self.DJANGO_VARIABLE_TAG.findall(front_template)).union(
-            set(self.DJANGO_VARIABLE_TAG.findall(back_template)))
+        front_vars = self.DJANGO_VARIABLE_TAG.findall(front_template)
+        back_vars = self.DJANGO_VARIABLE_TAG.findall(back_template)
+        all_vars = set(front_vars).union(set(back_vars))
         self._parsed = {'front':front_template,
                         'back' :back_template,
                         'background_color': background,
-                        'variables' : m}
+                        'variables' : all_vars,
+                        'front_vars': front_vars,
+                        'back_vars': back_vars}
                         
     def variables(self):
         return self.parsed().get('variables',[])
+        
+    def front_vars(self):
+        return self.parsed().get('front_vars',[])
+    
+    def back_vars(self):
+        return self.parsed().get('back_vars',[])
     
     def html_preview(self):
         v = self.variables()
@@ -416,14 +452,20 @@ class Scheduler(Page):
 
 
 class Cardset(db.Model):
+
     title = db.StringProperty(default='New Cardset')
     owner = db.UserProperty(auto_current_user_add=True)
     created = db.DateTimeProperty(auto_now_add=True)
     modified = db.DateTimeProperty(auto_now=True)
     public = db.BooleanProperty(default=True)
-    factsheet = PageProperty(Factsheet)
-    template = PageProperty(Template,default='template:default')
+    factsheet = db.ReferenceProperty(Factsheet)
+    template = db.ReferenceProperty(Template)
     mapping = db.TextProperty(default='')
+    
+    meta_keys = {'subject':'meta_subject',
+                 'book':'meta_book'}
+    meta_subject = db.StringProperty()
+    meta_book = db.StringProperty()
     
     @property
     def url(self):
@@ -432,8 +474,19 @@ class Cardset(db.Model):
         return reverse('cardbox.views.cardset_view',args=[self.key().id()])
         
     def html_meta(self):
-        return self.factsheet.html_meta()
-    
+        s = []
+        for key, attr_name in self.meta_keys.items():
+            if getattr(self, attr_name):
+                s.append('%s: %s' % (key, getattr(self, attr_name)))
+        return ', '.join(s)
+        
+    def set_meta_data(self):
+        keys = self.meta_keys.keys()
+        for sub in [self.factsheet, self.template]:
+            for k in keys:
+                if k in sub.meta_keys:
+                    setattr(self, self.meta_keys[k], getattr(sub, sub.meta_keys[k]))
+            
     def render_card(self, card_id):
         return CardRenderer(template=self.template,
                             factsheet=self.factsheet,
@@ -455,18 +508,19 @@ class Cardset(db.Model):
             k = self.key().id()
             return [(k, c_id) for c_id in self.factsheet.row_ids()]
         else:
-            print 'factsheet none'
             return []
         
     def mapping_as_json(self):
         return simplejson.dumps(yaml.load(self.mapping))
 
 class Box(db.Model):
+    study_set_size = 10
+    
     title = db.StringProperty(default='New Box')
     owner = db.UserProperty(auto_current_user_add=True)
     modified = db.DateTimeProperty(auto_now=True)
     cardsets = db.ListProperty(int)
-    scheduler = PageProperty(Scheduler,default='scheduler:default')
+    scheduler = db.ReferenceProperty(Scheduler)
     selector = db.TextProperty()
     last_studied = db.DateTimeProperty(default=datetime.datetime(2010,1,1))
     time_studied = TimeDeltaProperty(default=datetime.timedelta(0))
@@ -474,10 +528,6 @@ class Box(db.Model):
     def put(self, *args, **kwds):
         db.Model.put(self, *args, **kwds)
         self._update_cards()
-        
-    def get_cardsets(self):
-        items = zip(self.cardsets, Cardset.get_by_id(self.cardsets))
-        return dict([(k,v) for (k,v) in items if v is not None])
         
     def _update_cards(self):
         from engine import update_cards
@@ -491,28 +541,32 @@ class Box(db.Model):
         self.last_studied = now
         self.put()
         
-    def percentage_learned(self):
-        n_cards = len(list(self.all_card_ids()))
-        if n_cards == 0:
-            return 0.0;
-        available = Card.all(keys_only=True).ancestor(self)
-        available.order('learned_until')
-        available.filter('learned_until <', datetime.datetime.now())
-        available.filter('enabled',True)
-        n_available = available.count()
-        return (1-(n_available/float(n_cards)))*100.0
+    def stats(self):
+        if not hasattr(self, '_stats') or self._stats is None:
+            n_cards = len(list(self.all_card_ids()))
+            available = Card.all(keys_only=True).ancestor(self)
+            available.order('learned_until')
+            available.filter('learned_until <', datetime.datetime.now())
+            available.filter('enabled',True)
+            n_available = available.count()
+            n_learned = n_cards - n_available
+            percentage = (n_learned/float(n_cards))*100.0 if n_cards > 0 else 0.0
+            self._stats = {'percent_learned':percentage,'n_learned':n_learned,'n_cards':n_cards}
+        return self._stats
         
     def is_empty(self):
         cards = Card.all().ancestor(self).filter('enabled',True).count(limit=1)
         return (cards <= 0)
         
-    def card_to_study(self):
-        study_set_size = 10
+    def study_set(self):
         study_set = Card.all().ancestor(self)
         study_set.filter('in_study_set',True)
         study_set.filter('enabled',True)
-        study_set = list(study_set.fetch(study_set_size))
-        if len(study_set) < study_set_size/2:
+        return list(study_set.fetch(self.study_set_size))
+        
+    def card_to_study(self):
+        study_set = self.study_set()
+        if len(study_set) < self.study_set_size/2:
             available = Card.all().ancestor(self)
             available.filter('enabled',True)
             available.filter('learned_until <', datetime.datetime.now())
@@ -536,22 +590,23 @@ class Box(db.Model):
         return next_card
     
     def all_card_ids(self):
-        a = []
-        for cardset in self.get_cardsets().values():
-            a.extend(cardset.all_ids())
-        return a
+        output = []
+        cardsets = Cardset.get_by_id(self.cardsets)
+        for c in cardsets:
+            output.extend(c.all_ids())
+        return output
     
     def render_card(self, id_tuple):
         set_id, card_id = id_tuple
         set_id = int(set_id)
-        if set_id in self.get_cardsets():
-            cardset = self.get_cardsets()[set_id]
+        if set_id in self.cardsets:
+            cardset = Cardset.get_by_id(set_id)
             return cardset.render_card(card_id)
-    
+        else:
+            raise Exception("Trying to render card from set that is not in box.")
 
                     
 class Card(db.Model):
-    cardset = db.ReferenceProperty(Cardset)
     modified = db.DateTimeProperty(auto_now=True)
     enabled = db.BooleanProperty(default=True)
     in_study_set = db.BooleanProperty(default=False)
@@ -595,10 +650,10 @@ class Card(db.Model):
         self.last_studied = datetime.datetime.now().replace(microsecond=0)
         self.put()
         
-    def get_cardset(self):
-        if not self.cardset:
-            self.cardset = Cardset.get_by_id(int(self.key().name().split('-',1)[0]))
-        return self.cardset
+    def cardset(self):
+        if not hasattr(self, '_cardset'):
+            self._cardset = Cardset.get_by_id(int(self.key().name().split('-',1)[0]))
+        return self._cardset
         
     def is_learned(self):
         return self.learned_until > datetime.datetime.now()
@@ -636,7 +691,7 @@ class Card(db.Model):
                 'learned_ranges':['%s,%s'%s for s in zip(learned_from,learned_until)]}
         
     def rendered(self):
-        if not hasattr(self, '_rendered'):
+        if not hasattr(self, '_rendered') or self._rendered is None:
             self._rendered = self.parent().render_card(self.key().name().split('-',1))
         return self._rendered
 
@@ -654,7 +709,7 @@ class CardRenderer():
         self.safe_mode = safe_mode
     
     def rendered(self):        
-        if not hasattr(self, '_rendered'):
+        if not hasattr(self, '_rendered') or self._rendered is None:
             self._rendered = self._render()        
         return self._rendered
     
@@ -664,10 +719,17 @@ class CardRenderer():
     def back(self):
         return self.rendered()['back']
         
+    def front_data(self):
+        return self.rendered()['front_data']
+
+    def back_data(self):
+        return self.rendered()['back_data']
+        
     def background_color(self):
         return self.rendered()['background_color']
     
     def _render(self):
+        EMPTY_FIELD = mark_safe('&#160;&#160;')
         #Errors first
         if self.template is None:
             return self._error_card("Template not found or empty.")
@@ -681,23 +743,28 @@ class CardRenderer():
             if self.card_id is None or self.card_id not in self.factsheet.rows():
                 return self._error_card("Card not found in factsheet.")
             self.row = self.factsheet.rows()[self.card_id]
-        #Actual rendering
-        base = dict([(v,mark_safe('&#160;&#160;')) for v in self.template.variables()])
+        # Actual rendering
+        base = dict([(v,EMPTY_FIELD) for v in self.template.variables()])
         base.update(self.row)        
         mapping = yaml.load(self.mapping)
         if mapping is not None and mapping != 'None' and mapping != '':
             base.update([(newkey, base[oldkey]) for newkey, oldkey in mapping.items() if oldkey not in [None,'None']])
-        #Wrap all fields in a span with their ID
+        # Extract the base values first, without wrapping or templating
+        front_data = filter(lambda x: x != EMPTY_FIELD,[mark_safe(base[d]) for d in self.template.front_vars()])
+        back_data = filter(lambda x: x != EMPTY_FIELD,[mark_safe(base[d]) for d in self.template.back_vars()])
+        back_data = filter(lambda x: x not in front_data, back_data)
+        # Wrap all fields in a span with their ID
         for k in base.keys():
             base[k] = mark_safe('<span class="tfield" id="tfield_%s">%s</span>'%(k,encode_html(base[k])))
+        # Apply the template
         front = django_templates.Template(
             self.template.parsed()['front']).render(django_templates.Context(base))
         back = django_templates.Template(
             self.template.parsed()['back']).render(django_templates.Context(base))
         front = mark_safe(textile.textile(front))
         back = mark_safe(textile.textile(back))
-        return {'front':front, 
-                'back':back, 
+        return {'front':front, 'front_data':front_data, 
+                'back':back,   'back_data' :back_data,
                 'background_color':self.template.parsed()['background_color']}
                 
     def _error_card(self, error):
@@ -706,7 +773,6 @@ class CardRenderer():
         
 
 ### Helper Functions ###
-
 
 
 def encode_html(text):

@@ -62,7 +62,7 @@ class Mapper(object):
 
     def get_query(self):
         """Returns a query over the specified kind, with any appropriate filters applied."""
-        q = self.KIND.all(keys_only=self.KEYS_ONLY)
+        q = db.Query(self.KIND,keys_only=self.KEYS_ONLY)
         for prop, value in self.FILTERS:
             q.filter("%s =" % prop, value)
         if self.ancestor:
@@ -197,4 +197,5 @@ def create_cards(card_ids, box_key):
     deferred.defer(create_cards,
                    card_ids[BATCH_SIZE:],
                    box_key)
+   
    

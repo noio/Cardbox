@@ -19,12 +19,12 @@
             <div class='span-24'>
                 <div class='span-12'>
                     <p><label for='id_factsheet'>list:</label>
-                    <input id='id_factsheet' type='text' name='factsheet' value='{{cardset.factsheet.key.name}}'>
+                    <input id='id_factsheet' type='text' name='factsheet' value='{{cardset.factsheet.name}}'>
                     <a href='#' onClick='bsr.update({"kind":"list"}); return false;'>browse</a></p>
                 </div>
                 <div class='span-12 last'>
                     <p><label for='id_template'>template:</label>
-                    <input id='id_template' type='text' name='template' value='{{cardset.template.key.name}}'>
+                    <input id='id_template' type='text' name='template' value='{{cardset.template.name}}'>
                     <a href='#' onClick='bsr.update({"kind":"template"}); return false;'>browse</a></p>
                 </div>
                 
@@ -36,7 +36,7 @@
                     bsr.addEvent('action_select',function(id){
                         if (bsr.options.kind == 'list'){
                             $('id_factsheet').set('value',id);
-                            msr.setValues(bsr.getNamedRowData(id)['columns'].split(','))
+                            msr.setFactsheet(bsr.getNamedRowData(id)['id'])
                         }else if (bsr.options.kind == 'template'){
                             $('id_template').set('value',id);
                             msr.setTemplate(bsr.getNamedRowData(id)['id'])

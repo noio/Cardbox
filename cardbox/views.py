@@ -82,7 +82,7 @@ def frontpage(request):
     
 @login_required
 def page_create(request, kind):
-    return page_edit(request, kind)
+    return page_edit(request, kind, None)
    
 def page_view(request, kind, name):
     model = page_kinds[kind]
@@ -95,28 +95,22 @@ def page_preview(request, kind, name):
     return HttpResponse(page.html_preview())
     
 @login_required
-def page_edit(request, kind, name=None):
+def page_edit(request, kind, name):
     model = page_kinds[kind]
-    if name is None:
-        page = model()
-        if request.method == 'POST' and 'title' in request.POST:
-            title = request.POST['title']
-            name = model.validate_title(title)
-            if name is None:
-                name_error = """'%s' is not a valid title. Please use only letters, numbers and spaces. 
-                The title cannot start or end with a space either.""" % title
-            else:
-                name_error = None
-                page = model.get_by_name(name)
-    else:
-        page = model.get_by_name(name)
+    page = model.get_by_name(name) if name is not None else model()
     if request.method == 'POST':
         content = request.POST['content']
-        page.edit(content)
-        if page.errors() or name_error:
-            return respond(request, 'page_edit.html',{'page':page,'errors':page.errors(),'name_error':name_error})
-        return HttpResponseRedirect(reverse('cardbox.views.page_view',kwargs={'kind':kind,'name':name}))
+        title = request.POST.get('title',None)
+        page.edit(content, title)
+        if page.errors():
+            return respond(request, 'page_edit.html',{'page':page,'errors':page.errors()})
+        return HttpResponseRedirect(reverse('cardbox.views.page_view',kwargs={'kind':kind,'name':page.name}))
     return respond(request,'page_edit.html', {'page':page})
+    
+def page_json(request, kind, name):
+    model = page_kinds[kind]
+    page = model.get_by_name(name)
+    return HttpResponse(page.json())
 
 @login_required
 def cardset_create(request):
@@ -133,10 +127,11 @@ def cardset_edit(request, set_id=None):
     templates = models.Template.all().fetch(1000)
     if request.method == 'POST':
         cardset.title = request.POST['title']
-        cardset.factsheet = request.POST['factsheet']
-        cardset.template = request.POST['template']
+        cardset.factsheet = models.Factsheet.get_by_name(request.POST['factsheet'])
+        cardset.template = models.Template.get_by_name(request.POST['template'])
         #TODO: Validate mapping
         cardset.mapping = yaml.dump(simplejson.loads(request.POST['mapping']))
+        cardset.set_meta_data()
         cardset.put()
         return HttpResponseRedirect(reverse('cardbox.views.cardset_view',args=[cardset.key().id()]))
     return respond(request, 'cardset_edit.html',{'cardset':cardset, 'factsheets':factsheets,'templates':templates})
@@ -156,6 +151,11 @@ def box_edit(request, box_id=None):
     
     cardsets = models.Cardset.all().fetch(1000)
     return respond(request, 'box.html',{'box':box, 'cardsets':cardsets})
+    
+@login_required
+def box_stats(request, box_id):
+    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
+    return respond(request, 'box_stats.html',{'box':box})
 
 @login_required
 def study(request, box_id):
@@ -169,6 +169,8 @@ def study(request, box_id):
 def update_card(request,box_id):
     """ Updates the total scores of card through POST.
     """
+    if request.method != 'POST':
+        raise Http404
     card_id = request.POST['card_id']
     correct = request.POST['correct'] == 'true'
     box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
@@ -210,23 +212,26 @@ def browse_data(request,kind):
         raise Http404('Kind not found.')
     # Apply  filters
     if 'ids' in request.GET:
-        ids = [int(i) for i in request.GET['ids'].split(',')]
+        ids = [int(i) for i in request.GET['ids'].split(',') if i != '']
         entities = model.get_by_id(ids)
     else:
         entities = model.all()
         for key,value in request.GET.items():
-            if hasattr(model,'meta_keys') and key in model.meta_keys:
+            if value != '' and hasattr(model,'meta_keys') and key in model.meta_keys:
                 attr_name = model.meta_keys[key]
                 entities.filter(attr_name+' >=',value)
                 entities.filter(attr_name+' <',value+u"\ufffd")
     headers = ['id','url','title','tags','date']
-    rows = [(e.key().id_or_name(),
+    rows = [(e.name if hasattr(e,'name') else e.key().id_or_name(),
             e.url,
             e.title,
             e.html_meta(),
             e.modified.strftime('%d/%M/%Y'))
             for e in entities]
     return HttpResponse(simplejson.dumps({'headers':headers,'rows':rows}))
+    
+def maintenance(request):
+    return HttpResponse("Doing some maintenance, we'll be back really soon.")
 
 ### Helper functions ###
 

@@ -15,7 +15,7 @@
             <li>interval: {{card.interval}}</li>
             <li>last studied: {{card.last_studied|date}}</li>
             <li>learned until: {{card.learned_until|date}}</li>
-            <li>factsheet: {{card.get_cardset|from_datastore:"factsheet"|page_name}}</li>
+            <li>list: {{card.cardset.factsheet.name}}</li>
             <li><a href="{%url cardbox.views.card_view box.key.id card.key.name %}">stats</a></li>
         </ul>
     </div>
@@ -23,7 +23,7 @@
     <div class='box-info' style='display:none'>
         <h4>This Box</h4>
         <p>Total time studied: {{box.time_studied|timedelta}}</p>
-        <p>Progress: {{box.percentage_learned|floatformat}}%</p>
+        <p>Progress: {{box.stats.percent_learned|floatformat}}%</p>
 
     </div>
 </div>

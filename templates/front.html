@@ -5,27 +5,28 @@
     <div class="span-18">
         
         {% if request.user %}
+            <p>Welcome back!</p>
+            <h3><span class='faded'>Your</span> Boxes</h3>
             {% for box in request.user.my_boxes %}
                 <div class="span-14 append 4">
                     <div class='box-control'>
                         <div class='box-top'>
                             <h3><span class='icon'></span>{{box.title}}</h3>
                             <div class='progress'>
-                                <h3>{{box.percentage_learned|floatformat}}%</h3>
+                                <span>{{box.stats.n_learned}}/{{box.stats.n_cards}} =</span>
+                                <h3>{{box.stats.percent_learned|floatformat}}%</h3>
                             </div>
                         </div>
                         <div class='box-divider'></div>
                         <ul class='button-bar'>
                             <li class='button-study'><a href="{% url cardbox.views.study box.key.id %}"><span class='icon'></span>study</a></li>
                             <li class='button-edit'><a href="{% url cardbox.views.box_edit box.key.id %}"><span class='icon'></span>edit</a></li>
+                            <li class='button-stats'><a href="{% url cardbox.views.box_stats box.key.id %}"><span class='icon'></span>stats</a></li>
                         </ul>
                     </div>
                 </div>
                 <hr class='space'/>
             {% endfor %}
-            <div class='span-18 last'>
-                <a href="{%url cardbox.views.box_create%}">new box</a>
-            </div>
         {% else %}
             Welcome, please log in.
         {% endif %}
@@ -35,7 +36,7 @@
         <h4>Recent Activity</h4>
         <ul>
             {% for factsheet in factsheets %}
-            <li>{{factsheet.title}} <a href='{%url cardbox.views.page_edit kind="list" name=factsheet.key.name %}'>edit</a></li>
+            <li>{{factsheet.title}} <a href='{%url cardbox.views.page_edit kind="list" name=factsheet.name %}'>edit</a></li>
             {% endfor %}
         </ul>
         <h4>Contact the Developer</h4>

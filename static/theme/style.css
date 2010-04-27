@@ -105,12 +105,14 @@
   border: 1px solid #aaaaaa;
   border-top: none;
 }
+#footer { margin-bottom: 3em; }
 body {
   background: #f0f0f0;
   color: #403c3b;
 }
 a { color: #315875; }
 h3 .faded { color: #959190; }
+h4 .faded { color: #959190; }
 table { border: 1px solid #aaaaaa; }
 th {
   background: #ffffff;
@@ -119,6 +121,10 @@ th {
 }
 .table-tr-odd { background: #f6f6f6; }
 input.title { font-size: 1em; }
+ul.cloud {
+  padding: 0;
+  list-style: none;
+}
 .button-bar {
   background: #ffffff;
   height: 40px;
@@ -165,6 +171,7 @@ input.title { font-size: 1em; }
 }
 .button-study .icon { background-position: 0 0; }
 .button-edit .icon { background-position: 0 -30px; }
+.button-stats .icon { background-position: 0 -60px; }
 .button-cancel .icon { background-position: 0 -90px; }
 .button-save .icon { background-position: 0 -120px; }
 .box-control { border: 1px solid #aaaaaa; }
@@ -184,7 +191,18 @@ input.title { font-size: 1em; }
   display: inline-block;
   background: url('icon-box-medium.png') no-repeat;
 }
-.box-control .progress { float: right; }
+.box-control .progress {
+  float: right;
+  padding: 8px 10px 10px;
+  background: #575757;
+  color: white;
+}
+.box-control .progress h3 { color: white; }
+.box-control .progress span {
+  float: left;
+  display: block;
+  padding-right: 10px;
+}
 .box-divider {
   height: 12px;
   width: 100%;
@@ -209,6 +227,7 @@ input.title { font-size: 1em; }
   overflow: auto;
   line-height: 1.5;
 }
+.browser input { margin-right: 10px; }
 .browser table thead { cursor: pointer; }
 .browser col.column-view { width: 50px; }
 .browser col.column-date { width: 100px; }
@@ -253,6 +272,15 @@ input.title { font-size: 1em; }
 .splitview .card div.front { float: left; }
 .splitview .card div.back { float: left; }
 .splitview .card div.front { margin-right: 10px; }
+.card-data { margin-bottom: 4px; }
+.card-data .front {
+  display: inline-block;
+  height: 100%;
+  padding: 0 3px;
+  margin-right: 3px;
+  background: #fff9cc;
+  border: 1px solid #ccc699;
+}
 .button-wrong, .button-correct {
   display: block;
   float: left;
@@ -260,43 +288,5 @@ input.title { font-size: 1em; }
   padding: 7px 0;
   text-align: center;
   border: 1px solid #666666;
-  -moz-border-radius: 5px;
-  -webkit-border-radius: 5px;
-  border-radius: 5px;
 }
 .button-wrong { float: right; }
-.cardsets ul {
-  padding: 10px;
-  border: 1px dashed #aaaaaa;
-}
-.cardsets ul li {
-  float: left;
-  display: block;
-  width: 240px;
-  height: 135px;
-  margin: 5px;
-  position: relative;
-}
-.cardsets ul li span {
-  position: absolute;
-  top: 70px;
-  z-index: 2;
-  width: 230px;
-  height: 52px;
-  padding: 5px;
-  background: #e9f3e9;
-  border: 1px solid #737873;
-  -moz-border-radius: 3px;
-  -webkit-border-radius: 3px;
-  border-radius: 3px;
-}
-.cardsets ul li h6 a {
-  float: right;
-  display: block;
-}
-.cardsets ul li .card {
-  position: absolute;
-  left: 3px;
-  top: 5px;
-  z-index: 1;
-}

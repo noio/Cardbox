@@ -114,7 +114,8 @@ var BrowseTable = new Class({
     options:{
         kind: null,
         actions: ['select'],
-        allowedFilters: {'list':['subject']},
+        allowedFilters: {'list':['subject','book'],
+                         'cardset':['subject','book']},
         filters: {},
         showControl: true
     },
@@ -245,7 +246,7 @@ var MappingSelector = new Class({
         if (this.mapping === null) {this.mapping = {};}
     },
     
-    setValues: function(values){
+    setFactsheet: function(factsheet_id){
         this.values = ['None'].combine(values.erase(''));
         this.redraw();
     },
@@ -256,7 +257,7 @@ var MappingSelector = new Class({
             'onComplete':function(t,e,h,j){
                 this.redraw();
             }.bind(this)
-        }).get('/page/'+template_id+'/preview');
+        }).get('/template/'+template_id+'/preview');
     },
     
     dump: function(){

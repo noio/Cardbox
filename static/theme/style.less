@@ -1,6 +1,7 @@
 /***** DEFINITIONS *****/
 @background:                        #f0f0f0;
 @color:                             #403C3B;
+@mid_grey:                          @background - #999999;                       
 @alt_background:                    #FFFFFF;
 @alt_color:                         #A98060;
 @outlines:                          #AAAAAA;
@@ -52,18 +53,23 @@
 .tip-wrap                           {z-index: 1000; max-width: 200px;}
     .tip-top                        {height:12px; background: url('tip-top.png') top left no-repeat;}
     .tip                            {padding:10px; background: @alt_background; border:1px solid @outlines; border-top: none;}
+    
+/***** FOOTER *****/
+#footer                             {margin-bottom: 3em;}
 
 /***** STYLES *****/            
 body                                {background: @background; color: @color;}
 a                                   {color: @link_blue;}   
 
-h3 .faded                           {color: @color + #555555;}
+h3 .faded, h4 .faded                {color: @color + #555555;}
 
 table                               {border: 1px solid @outlines;}
     th                              {background: @alt_background; font-weight:bold; border-bottom: 2px solid @separator;}
     .table-tr-odd                   {background: @background + #060606;}
     
 input.title {font-size:1em;}
+
+ul.cloud                            {padding: 0; list-style: none;}
 
                                 
 /***** ELEMENTS *****/          
@@ -80,6 +86,7 @@ input.title {font-size:1em;}
                                      background: url('icons-actions.png'); vertical-align: -35%;}
     .button-study .icon             {background-position: 0 0;}
     .button-edit .icon              {background-position: 0 -30px;}
+    .button-stats .icon             {background-position: 0 -60px;}
     .button-cancel .icon            {background-position: 0 -90px;}
     .button-save .icon              {background-position: 0 -120px;}
 
@@ -88,7 +95,9 @@ input.title {font-size:1em;}
     .box-control h3                 {float: left; margin-bottom: 0;}
         .box-control h3 .icon       {height: 40px; width: 40px; padding-right: 10px; vertical-align: -25%;
                                      display: inline-block; background: url('icon-box-medium.png') no-repeat;}
-    .box-control .progress          {float: right;}
+    .box-control .progress          {float: right; padding: 8px 10px 10px; background: @mid_grey; color: white;}
+        .box-control .progress h3   {color: white;}
+        .box-control .progress span {float: left; display: block; padding-right: 10px;}
     .box-divider                    {height: 12px; width: 100%; background: url('box-divider.png');}
 
 .pill                               {background: @alt_background; color: @alt_color; display: inline-block;
@@ -97,6 +106,7 @@ input.title {font-size:1em;}
     .pill a:hover, .pill a.current  {color: @alt_color;}
                                 
 .browser .squish                    {max-height: 400px; overflow: auto; line-height: 1.5;}
+    .browser input                  {margin-right: 10px;}
     .browser table thead            {cursor: pointer;}
     .browser col.column-view        {width: 50px;}
     .browser col.column-date        {width: 100px;}
@@ -118,15 +128,19 @@ input.title {font-size:1em;}
     .splitview .card div.front,
     .splitview .card div.back       {float: left;}
     .splitview .card div.front      {margin-right: 10px;} 
+    
+.card-data                          {margin-bottom: 4px;}
+    .card-data .front               {display: inline-block; height: 100%; padding: 0 3px; margin-right: 3px;
+                                     background: #fff9cc; border: 1px solid (#fff9cc - #333);}
                                 
                                 
 .button-wrong, .button-correct      {display: block; float: left; 
                                      width: 100px; padding: 7px 0; 
                                      text-align: center;
-                                     border: 1px solid #666; .rounded_corners(5px);}
+                                     border: 1px solid #666;}
 .button-wrong                       {float: right;}
                                 
-                                
+/*                                
 .cardsets ul                        {padding: 10px; border: 1px dashed #aaa;}
 .cardsets ul li                     {float: left; display: block; 
                                      width: 240px; height: 135px; 
@@ -138,5 +152,5 @@ input.title {font-size:1em;}
                                      border: 1px solid #737873; .rounded_corners(3px);}
 .cardsets ul li h6 a                {float: right; display: block;}
 .cardsets ul li .card               {position: absolute; left: 3px; top: 5px;
-                                     z-index: 1;}
+                                     z-index: 1;}*/
                                 

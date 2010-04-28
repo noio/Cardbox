@@ -327,6 +327,7 @@ var StudyClient = new Class({
     },
     
     initialize: function(id, box_id, options){
+        this.setOptions(options);
         this.element = $(id);
         this.box_id = box_id
         this.cardstack = [];
@@ -436,6 +437,39 @@ var StudyClient = new Class({
         this.update();
     }
 });
+
+var ModalBox = new Class({
+    Implements: [Options],
+    options:{
+        title: ''
+    },
+    
+    initialize: function(id, options){
+        this.setOptions(options);
+        this.element = $(id);
+        //this.element.addClass('content');
+        this.modal = new Element('div',{'class':'modal'})
+        var inner = new Element('div',{'class':'inner'});
+        inner.wraps(this.element);
+        this.modal.wraps(inner);
+        inner.addEvent('click',function(e){
+            e.stop();
+        });
+        this.modal.addEvent('click',function(e){
+            e.stop();
+            this.modal.fade('out');
+        }.bind(this));
+        this.modal.fade('hide');
+    },
+    
+    show: function(){
+        this.modal.fade('in');
+    },
+    
+    hide: function(){
+        this.modal.fade('out');
+    }
+})
 
 var KeyBinder = new new Class({
     initialize: function(){

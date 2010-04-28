@@ -10,7 +10,7 @@
         {% endif %}
         
             <div class='page-head'>
-                <h3><span class='faded'>Editing cardset:</span></h3> <input id='id_title' type='text' class='title' name='title' value='{{cardset.title}}'>
+                <span class='item-icon cardset'></span><h3><span class='faded'>Editing cardset: </span></h3> <input id='id_title' type='text' class='title' name='title' value='{{cardset.title}}'>
                 <div class='button-bar standalone'><ul>
                     {% if cardset.is_saved %}<li><a class='button-cancel' href='{% url cardbox.views.cardset_view cardset.key.id %}'><span class='icon'></span>Cancel</a></li>{%endif%}
                     <li><a class='button-save' href='#' onClick='$("cardset-edit-form").submit()'><span class='icon'></span>Save Changes</a></li>
@@ -18,50 +18,46 @@
             </div>
            
             <div class='span-24'>
-                <div class='span-12'>
-                    <p><label for='id_factsheet'>list:</label>
-                    <input id='id_factsheet' type='text' name='factsheet' value='{{cardset.factsheet.name}}'>
-                    <a href='#' onClick='bsr.update({"kind":"list"}); return false;'>browse</a></p>
+                <h4>Select List and Template</h4>
+                <div class='span-6'>
+                    <p>Select a list and a template on the right. These will be combined into a cardset!</p>
                 </div>
-                <div class='span-12 last'>
-                    <p><label for='id_template'>template:</label>
-                    <input id='id_template' type='text' name='template' value='{{cardset.template.name}}'>
-                    <a href='#' onClick='bsr.update({"kind":"template"}); return false;'>browse</a></p>
+                <div class='span-8'><div class='cardset-component'>
+                    <h4>
+                        <span class='item-icon list'></span>
+                        <span class='faded'>List: </span>
+                        <span id='list_title'>{{cardset.factsheet.title}}</span>
+                    </h4>
+                    <input id='id_factsheet' type='hidden' name='factsheet' value='{{cardset.factsheet.name}}'>
+                    <a href='#' onClick='pickList(); return false;'>Browse</a>
+                </div></div>
+                <div class='span-2'>
+                    <img style='margin: 20px 0 0 6px;' src='{{media_url}}theme/plus.png'>
                 </div>
+                <div class='span-8 last'><div class='cardset-component'>
+                    <h4>
+                        <span class='item-icon template'></span>
+                        <span class='faded'>Template: </span>
+                        <span id='template_title'>{{cardset.template.title}}</span>
+                    </h4>
+                    <input id='id_template' type='hidden' name='template' value='{{cardset.template.name}}'>
+                    <a href='#' onClick='pickTemplate(); return false;'>Browse</a>
+                </div></div>
             </div>
                 
-            <div class='span-24' id='browser'>
+            <div id='browser-modal-box'>
+                <div id='browser'></div>
             </div>
-           
-            <script type='text/javascript'>
-                bsr = new BrowseTable('browser');
-                bsr.addEvent('action_select',function(id){
-                    if (bsr.options.kind == 'list'){
-                        $('id_factsheet').set('value',id);
-                        msr.setFactsheet(bsr.getNamedRowData(id)['id'])
-                    }else if (bsr.options.kind == 'template'){
-                        $('id_template').set('value',id);
-                        msr.setTemplate(bsr.getNamedRowData(id)['id'])
-                    }
-                });
-                $('id_factsheet').addEvent('focus',function(){
-                    bsr.update({'kind':'list'});
-                });
-                $('id_template').addEvent('focus',function(){
-                    bsr.update({'kind':'template'});
-                });
-            </script>
+            
+            <hr class='space'>
             
             <div class='span-24'>
                 <input id='id_mapping' type='hidden' name='mapping' value='{{cardset.mapping_as_json}}'/>
-                <h4>select mapping:</h4>
+                <h4>Select mapping:</h4>
+                <p>Click each of the fields below until the cards look like you want to. Select &ldquo;None&rdquo; if you want to leave a field empty.
                 <div id='mapper'>
                     {{cardset.template.html_preview}}
                 </div>
-                <script type='text/javascript'>
-                    msr = new MappingSelector('mapper','id_mapping');
-                    msr.setValues(['{{cardset.factsheet.columns|join:"','"}}'])
-                </script>
             </div>
             
             <hr class='space'>
@@ -72,4 +68,41 @@
             </ul></div>
         </form>
     </div>
+    
+    <script type='text/javascript'>
+        function pickList(){
+            bsr.update({"kind":"list"})
+            modalBox.show();
+        }
+        
+        function pickTemplate(){
+            bsr.update({"kind":"template"})
+            modalBox.show();
+        }
+    
+        modalBox = new ModalBox('browser-modal-box');
+        bsr = new BrowseTable('browser');
+        bsr.addEvent('action_select',function(id){
+            if (bsr.options.kind == 'list'){
+                $('id_factsheet').set('value',id);
+                $('list_title').set('html',bsr.getNamedRowData(id)['title']);
+                msr.setFactsheet(bsr.getNamedRowData(id)['id']);
+            }else if (bsr.options.kind == 'template'){
+                $('id_template').set('value',id);
+                $('template_title').set('html',bsr.getNamedRowData(id)['title']);
+                msr.setTemplate(bsr.getNamedRowData(id)['id']);
+            }
+            modalBox.hide();
+        });
+        $('id_factsheet').addEvent('focus',function(){
+            bsr.update({'kind':'list'});
+        });
+        $('id_template').addEvent('focus',function(){
+            bsr.update({'kind':'template'});
+        });
+        
+        msr = new MappingSelector('mapper','id_mapping');
+        msr.setValues(['{{cardset.factsheet.columns|join:"','"}}'])
+    </script>
+    
 {% endblock %}

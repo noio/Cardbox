@@ -5,10 +5,12 @@
         {% if page.is_saved %}
             <form id='page-edit-form' action="{% url cardbox.views.page_edit kind=page.kind_name name=page.name %}" method="post">
             <div class='page-head'>
-                <h3><span class='faded'>Editing {{page.kind_name}}: </span></h3> <input class='title' name='title' type='text' value='{{page.title}}'>
+                <span class='item-icon {{page.kind_name}}'></span>
+                <h3></span><span class='faded'>Editing {{page.kind_name}}: </span></h3> <input class='title' name='title' type='text' value='{{page.title}}'>
         {% else %}
             <form id='page-edit-form' action="{% url cardbox.views.page_create kind=page.kind_name %}" method="post">
             <div class='page-head'>
+                <span class='item-icon {{page.kind_name}}'></span>
                 <h3><span class='faded'>Creating a {{page.kind_name}} named: </span></h3> <input class='title' name='title' type='text' value='{{page.title}}'>
         {% endif %}
                 <div class='button-bar standalone'><ul>

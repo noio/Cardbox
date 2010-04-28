@@ -245,10 +245,14 @@ var MappingSelector = new Class({
         this.mapping = JSON.decode(this.outputField.get('value'));
         if (this.mapping === null) {this.mapping = {};}
     },
-    
-    setFactsheet: function(factsheet_id){
-        this.values = ['None'].combine(values.erase(''));
-        this.redraw();
+
+    setFactsheet: function(list_id){
+        var rq = new Request.JSON({
+            'onComplete':function(json, text){
+                this.setValues(json.columns);
+                this.redraw();
+            }.bind(this)
+        }).get('/list/'+list_id+'/json');
     },
     
     setTemplate: function(template_id){
@@ -260,12 +264,24 @@ var MappingSelector = new Class({
         }).get('/template/'+template_id+'/preview');
     },
     
+    setValues: function(values){
+        this.values = ['None'].combine(values.erase(''));
+        // Remove mapping entries that don't occur in values.
+        for (field_id in this.mapping){
+            if (!this.values.contains(this.mapping[field_id])){
+                delete this.mapping[field_id];
+            }
+        }
+        this.redraw();
+    },
+    
     dump: function(){
         var fields = this.element.getElements('.tfield');
         var output = {};
         fields.each(function(item,index){
             output[item.get('id').replace('tfield_','')] = item.get('html');
         });
+        this.mapping = output;
         this.outputField.set('value', JSON.encode(output));
     },
     

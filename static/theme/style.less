@@ -55,7 +55,7 @@
     .tip                            {padding:10px; background: @alt_background; border:1px solid @outlines; border-top: none;}
     
 /***** FOOTER *****/
-#footer                             {margin-bottom: 3em;}
+#footer                             {padding-bottom: 3em;}
 
 /***** STYLES *****/            
 body                                {background: @background; color: @color;}
@@ -67,7 +67,7 @@ table                               {border: 1px solid @outlines;}
     th                              {background: @alt_background; font-weight:bold; border-bottom: 2px solid @separator;}
     .table-tr-odd                   {background: @background + #060606;}
     
-input.title {font-size:1em;}
+/*input.title {font-size:1em;}*/
 
 ul.cloud                            {padding: 0; list-style: none;}
 
@@ -100,10 +100,11 @@ ul.cloud                            {padding: 0; list-style: none;}
         .box-control .progress span {float: left; display: block; padding-right: 10px;}
     .box-divider                    {height: 12px; width: 100%; background: url('box-divider.png');}
 
-.pill                               {background: @alt_background; color: @alt_color; display: inline-block;
-                                     padding: 0 1em; margin-bottom: 1em; border: 2px solid (@alt_background - #333333); .rounded_corners(1em);}
-    .pill a                         {color: @link_blue + #666;}
-    .pill a:hover, .pill a.current  {color: @alt_color;}
+.page-head                          {padding: 10px; margin-bottom: 1em; height: 42px;
+                                     background: @background - #111111; border: 1px solid @outlines;}
+    .page-head .button-bar          {float: right;}
+    .page-head h3                   {float: left; margin: 0.5em 0;}
+    .page-head input                {font-size: 1.5em; margin: 0.15em;}
                                 
 .browser .squish                    {max-height: 400px; overflow: auto; line-height: 1.5;}
     .browser input                  {margin-right: 10px;}

@@ -232,78 +232,6 @@ class Page(db.Model):
                                       is_revision=True)
         return revised_page
 
-### Custom Properties ###
-
-class PageProperty(db.Property):
-
-    def __init__(self,
-                 reference_class=None,
-                 verbose_name=None,
-                 **attrs):
-      super(PageProperty, self).__init__(verbose_name, **attrs)
-      
-      if reference_class not in [Factsheet, Template, Scheduler]:
-          raise KindError('reference_class must be a Page subclass.')
-      self.reference_class = self.data_type = reference_class
-   
-    def __get__(self, model_instance, model_class):
-        if model_instance is None:
-            return self
-        if hasattr(model_instance, self.__id_attr_name()):
-            reference_id = getattr(model_instance, self.__id_attr_name())
-        else:
-            reference_id = None
-        resolved = getattr(model_instance, self.__resolved_attr_name())
-        if resolved is not None:
-            return resolved
-        else:
-            instance = self.reference_class.get_by_name(reference_id)
-            if instance is None:
-                raise Error('PageProperty encountered invalid page name.')
-            setattr(model_instance, self.__resolved_attr_name(), instance)
-            return instance
-   
-    def __set__(self, model_instance, value):
-        """Set reference."""
-        value = self.validate(value)
-        if value is not None:
-            if isinstance(value, basestring):
-                setattr(model_instance, self.__id_attr_name(), value)
-                setattr(model_instance, self.__resolved_attr_name(), None)
-            elif isinstance(value, db.Key):
-                setattr(model_instance, self.__id_attr_name(), value)
-                setattr(model_instance, self.__resolved_attr_name(), None)            
-            else:
-                setattr(model_instance, self.__id_attr_name(), value.key().name())
-                setattr(model_instance, self.__resolved_attr_name(), value)
-        else:
-            setattr(model_instance, self.__id_attr_name(), None)
-            setattr(model_instance, self.__resolved_attr_name(), None)
-   
-    def get_value_for_datastore(self, model_instance):
-        """Get key of reference rather than reference itself."""
-        return getattr(model_instance, self.__id_attr_name())
-   
-    def validate(self, value):
-        return value
-        if isinstance(value, basestring):
-            return value
-        if value is not None and not isinstance(value, db.Key) and not value.key():
-            raise BadValueError(
-            '%s instance must have a complete key before it can be stored as a '
-            'reference' % self.reference_class.kind())
-        value = super(PageProperty, self).validate(value)
-        if value is not None and not isinstance(value, self.reference_class):
-            raise KindError('Property %s must be an instance of %s' %
-                          (self.name, self.reference_class.kind()))
-        return value
-   
-    def __id_attr_name(self):
-        return self._attr_name()
-   
-    def __resolved_attr_name(self):
-        return '_RESOLVED' + self._attr_name()
-
 
 class TimeDeltaProperty(db.Property):
     def get_value_for_datastore(self, model_instance):
@@ -378,6 +306,11 @@ class Factsheet(Page):
             return render_to_string('factsheet.html',{'order':self.parsed()['order'],'rows':self.rows()})
         else:
             return "No preview"
+            
+    def json(self):
+        return simplejson.dumps({'name':self.name,
+                                 'columns':self.columns()
+                                })
         
     def columns(self):
         return self.parsed().get('columns',[])

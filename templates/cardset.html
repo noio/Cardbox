@@ -4,13 +4,14 @@
 
 {% block content %}
     <div class="span-24 last">
-        <span class='pill'>
-            <a href='{% url cardbox.views.cardset_view cardset.key.id %}' class='current'>view</a> | 
-            <a href='{% url cardbox.views.cardset_edit cardset.key.id %}'>edit</a>
-        </span>
-        <h3>{{cardset.title}}</h3>
-        <br/>
-   
+        
+        <div class='page-head'>
+            <h3><span class='faded'>Viewing cardset:</span> {{cardset.title}}</h3>
+            <div class='button-bar standalone'>
+                <a class='button-edit' href="{% url cardbox.views.cardset_edit cardset.key.id %}"><span class='icon'></span>edit</a>
+            </div>
+        </div>
+
         <div class='span-24'>
                 <p><strong>factsheet: </strong>
                     <a href='{%url cardbox.views.page_view kind="list" name=cardset.factsheet.name%}'>

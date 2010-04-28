@@ -105,7 +105,7 @@
   border: 1px solid #aaaaaa;
   border-top: none;
 }
-#footer { margin-bottom: 3em; }
+#footer { padding-bottom: 3em; }
 body {
   background: #f0f0f0;
   color: #403c3b;
@@ -120,7 +120,6 @@ th {
   border-bottom: 2px solid #666666;
 }
 .table-tr-odd { background: #f6f6f6; }
-input.title { font-size: 1em; }
 ul.cloud {
   padding: 0;
   list-style: none;
@@ -208,20 +207,22 @@ ul.cloud {
   width: 100%;
   background: url('box-divider.png');
 }
-.pill {
-  background: #ffffff;
-  color: #a98060;
-  display: inline-block;
-  padding: 0 1em;
+.page-head {
+  padding: 10px;
   margin-bottom: 1em;
-  border: 2px solid #cccccc;
-  -moz-border-radius: 1em;
-  -webkit-border-radius: 1em;
-  border-radius: 1em;
+  height: 42px;
+  background: #dfdfdf;
+  border: 1px solid #aaaaaa;
 }
-.pill a { color: #97bedb; }
-.pill a:hover { color: #a98060; }
-.pill a.current { color: #a98060; }
+.page-head .button-bar { float: right; }
+.page-head h3 {
+  float: left;
+  margin: 0.5em 0;
+}
+.page-head input {
+  font-size: 1.5em;
+  margin: 0.15em;
+}
 .browser .squish {
   max-height: 400px;
   overflow: auto;

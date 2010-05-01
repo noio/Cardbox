@@ -23,6 +23,11 @@ indexes:
   - name: enabled
   - name: learned_until
 
+- kind: DailyBoxStats
+  ancestor: yes
+  properties:
+  - name: day
+
 - kind: Revision
   ancestor: yes
   properties:

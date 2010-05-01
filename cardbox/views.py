@@ -122,7 +122,7 @@ def cardset_view(request, set_id):
 
 @login_required
 def cardset_edit(request, set_id=None):
-    cardset = get_by_id_or_404(request, models.Cardset, set_id, require_owner=True, new_if_id_none=True)
+    cardset = get_by_id_or_404(request, models.Cardset, set_id, require_owner=False, new_if_id_none=True)
     factsheets = models.Factsheet.all().fetch(1000)
     templates = models.Template.all().fetch(1000)
     if request.method == 'POST':
@@ -194,7 +194,7 @@ def browse(request, kind):
 def card_view(request, box_id, card_id):
     box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
     card = models.Card.get_by_key_name(card_id, parent=box)
-    print card.stats()
+    logging.info('CHART URL' + card.chart().url())
     return respond(request, 'card_view.html', {'card':card})
 
 def browse_data(request,kind):
@@ -221,12 +221,12 @@ def browse_data(request,kind):
                 attr_name = model.meta_keys[key]
                 entities.filter(attr_name+' >=',value)
                 entities.filter(attr_name+' <',value+u"\ufffd")
-    headers = ['id','url','title','tags','date']
-    rows = [(e.name if hasattr(e,'name') else e.key().id_or_name(),
+    headers = ['id','url','title'] + model.meta_keys.keys() + ['date']
+    rows = [[e.name if hasattr(e,'name') else e.key().id_or_name(),
             e.url,
-            e.title,
-            e.html_meta(),
-            e.modified.strftime('%d/%M/%Y'))
+            e.title] + 
+            e.meta().values() +
+            [e.modified.strftime('%d/%m/%Y')]
             for e in entities]
     return HttpResponse(simplejson.dumps({'headers':headers,'rows':rows}))
     

@@ -157,14 +157,22 @@ var BrowseTable = new Class({
         if (!this.options.showControl) {return;}
         var h = this.options.allowedFilters[this.options.kind];
         if($chk(h)){
-             h.each(function(value, index){
-                var label = new Element('label',{'html':value+': '});
-                var field = new Element('input',{'type':'text'});
-                this.control.adopt(label, field);
-                var o = new Observer(field, function(e){
-                    this.addFilter(value, e);
-                }.bind(this), {'delay':1000});
+            var label = new Element('label',{'for':'filter-field-select','html':'Filter: '})
+            var select = new Element('select',{'id':'filter-field-select','name':'filter-field'})
+            h.each(function(value, index){                
+                var option = new Element('option',{
+                    'value':value,
+                    'html':value
+                });
+                select.adopt(option);
             }.bind(this));
+            var label2 = new Element('label',{'for':'filter-value','html':' starts with: '});
+            var field = new Element('input',{'id':'filter-value','type':'text'});
+            this.control.adopt(label, select, label2, field);
+            
+            var o = new Observer(field, function(e){
+                this.addFilter($('filter-field-select').getSelected()[0].get('value'), e);
+            }.bind(this), {'delay':1000});
         }
     },
     
@@ -183,6 +191,7 @@ var BrowseTable = new Class({
         headers = this.options.actions.concat(headers);
         this.table.setHeaders(headers);
         this.data.rows.each(function(row,idx){
+            row = row.map(function(r){if (r === null) return '';return r;});
             this.addRow(row);
         },this);
         headers.each(function(header,idx){
@@ -203,14 +212,15 @@ var BrowseTable = new Class({
     addRow: function(rowData){
         if (this.getRowIds().contains(rowData[0])) {return;}
         var tr = rowData.slice(2);
-        var viewLink = new Element('a',{'href':rowData[1],
+        var viewLink = new Element('a',{'class':'button action-view',
+                                        'href':rowData[1],
                                         'target':'_blank',
                                         'html':'view'});
         tr.unshift(viewLink);
         this.options.actions.each(function(a,idx){
             var action = new Element('a',{'href':'#',
                                           'html':a,
-                                          'class':'action_'+a});
+                                          'class':'button action-'+a});
             action.addEvent('click',function(element){
                 this.fireEvent('action_'+a,[rowData[0]]);
             }.bind(this));

@@ -43,7 +43,7 @@ class Mapper(object):
         self.to_put_dict = {}
         self.to_delete = []
         self.next_mapper = next_mapper
-        self.ancestor = ancestor
+        self.ancestor = ancestor if isinstance(ancestor, db.Key) else ancestor.key()
 
     def map(self, entity):
         """Updates a single entity.
@@ -128,12 +128,11 @@ class Mapper(object):
         else:
             self.finish()
             
-### Cleaner Mapper ###
+### Card Cleaner/Creator ###
 
 def update_cards(card_ids, box):
     c = CardCleaner(card_ids=card_ids,ancestor=box)
     c.run()
-    
 
 class CardCleaner(Mapper):
     """ Runs through all the cards in a given box (ancestor),
@@ -163,10 +162,11 @@ class CardCleaner(Mapper):
                 return ([card],[])
         else:
             try:
+                card.enabled = True
                 self.card_ids.remove(id_tuple)
             except ValueError:
                 logging.warning('CardCleaner %s was not found in %s'%(id_tuple,self.card_ids))
-            return ([],[])
+            return ([card],[])
                 
     def finish(self):
         if self.card_ids:
@@ -199,3 +199,42 @@ def create_cards(card_ids, box_key):
                    box_key)
    
    
+### Box Stats Creator ###
+
+def create_box_stats(for_box, days_back=10):
+    logging.info("Creating stats for box %s"%(str(for_box)))
+    if isinstance(for_box, basestring):
+        for_box = db.Key(for_box)
+    for d in range(days_back, 0, -1):
+        td = datetime.timedelta(days=d)
+        day = datetime.date.today() - td
+        BoxStatsMapper(day, ancestor=for_box).run()
+        
+class BoxStatsMapper(Mapper):
+    
+    KIND = models.Card
+    FILTERS = [('enabled',True)]
+    
+    def __init__(self, date, **kwds):
+        self.date = date
+        self.n_cards = 0
+        self.n_learned = 0
+        #self.stats = str(stats.key())
+        Mapper.__init__(self, **kwds)
+        
+    def map(self, card):
+        state = card.state_at(self.date)
+        if state['studied']:
+            self.n_cards += 1
+        if state['learned']:
+            self.n_learned += 1
+        return ([],[])
+    
+    def finish(self):
+        date_string = self.date.strftime('%d-%m-%Y')
+        stats = models.DailyBoxStats(key_name=date_string, 
+                                     parent=self.ancestor, 
+                                     day=self.date,
+                                     n_cards=self.n_cards,
+                                     n_learned=self.n_learned)
+        stats.put()

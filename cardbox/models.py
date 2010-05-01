@@ -108,12 +108,8 @@ class Page(db.Model):
     def html_preview(self):
         return None
         
-    def html_meta(self):
-        s = []
-        for key, attr_name in self.meta_keys.items():
-            if getattr(self, attr_name):
-                s.append('%s: %s' % (key, getattr(self, attr_name)))
-        return ', '.join(s)
+    def meta(self):
+        return dict([(key, getattr(self, attr_name)) for key, attr_name in self.meta_keys.items()])
         
     def json(self):
         return simplejson.dumps({'name':self.name,
@@ -205,7 +201,7 @@ class Page(db.Model):
             if key in meta and hasattr(self,attr_name):
                 value = meta[key]
                 if not re.match(r'^[a-zA-Z0-9 ]+$',value):
-                    raise PageException("Meta value for '%s' can only contain letters, numbers and spaces."%m)
+                    raise PageException("Meta value for '%s' can only contain letters, numbers and spaces."%value)
                 value = re.sub(r' +',' ',value).lower()
                 setattr(self, attr_name, value)
         if len(self.meta_keys.keys()):
@@ -406,12 +402,8 @@ class Cardset(db.Model):
         """
         return reverse('cardbox.views.cardset_view',args=[self.key().id()])
         
-    def html_meta(self):
-        s = []
-        for key, attr_name in self.meta_keys.items():
-            if getattr(self, attr_name):
-                s.append('%s: %s' % (key, getattr(self, attr_name)))
-        return ', '.join(s)
+    def meta(self):
+        return dict([(key, getattr(self, attr_name)) for key, attr_name in self.meta_keys.items()])
         
     def set_meta_data(self):
         keys = self.meta_keys.keys()
@@ -458,6 +450,11 @@ class Box(db.Model):
     last_studied = db.DateTimeProperty(default=datetime.datetime(2010,1,1))
     time_studied = TimeDeltaProperty(default=datetime.timedelta(0))
     
+    def __init__(self, *args, **kwds):
+        super(Box,self).__init__(*args, **kwds)
+        if self.scheduler is None:
+            self.scheduler = Scheduler.all().get()
+    
     def put(self, *args, **kwds):
         db.Model.put(self, *args, **kwds)
         self._update_cards()
@@ -487,6 +484,20 @@ class Box(db.Model):
             self._stats = {'percent_learned':percentage,'n_learned':n_learned,'n_cards':n_cards}
         return self._stats
         
+    def charts(self):
+        recent =  datetime.date.today() - datetime.timedelta(days=5)
+        recentstats = DailyBoxStats.all().ancestor(self).filter('day >',recent)
+        if recentstats.count(limit=1) < 1:
+            from engine import create_box_stats
+            create_box_stats(self, 20)
+        stats = DailyBoxStats.all().ancestor(self).order('day').fetch(limit=60)
+        data = [(s.day, s.n_cards, s.n_learned) for s in stats]
+        (dates, n_cards, n_learned) = zip(*data)
+        chart = TimelineChart(size='630x250')
+        chart.add_line(dates, n_cards, label='Total cards',color='0000FF')
+        chart.add_line(dates, n_learned, label='Learned')
+        return {'n_cards':chart}
+        
     def is_empty(self):
         cards = Card.all().ancestor(self).filter('enabled',True).count(limit=1)
         return (cards <= 0)
@@ -509,7 +520,7 @@ class Box(db.Model):
             available = filter(lambda x: not x.in_study_set, available)
             logging.info("available cards filtered: %d"%len(available))
             
-            refill = random.sample(available,min(len(available),study_set_size))
+            refill = random.sample(available,min(len(available),self.study_set_size))
             for c in refill:
                 c.in_study_set = True
                 c.put()
@@ -591,42 +602,37 @@ class Card(db.Model):
     def is_learned(self):
         return self.learned_until > datetime.datetime.now()
         
-    def stats(self, start_at=None, end_at=None):
-        RANGE = 100.0
-        timestamps = []
-        labels = []
+    def state_at(self, date):
+        dt = datetime.datetime.combine(date, datetime.time(0))
+        last_state = {'learned':False,'studied':False}
+        history = yaml.load(self.history)
+        if history: 
+            for entry in history:
+                if dt > entry[0]:
+                    last_state = {'learned':dt < entry[4],'studied':True}
+        return last_state
+        
+    def charts(self):
+        chart = TimelineChart()
+        history = yaml.load(self.history)
+        times = []
         intervals = []
         learned_until = []
-        last_date = datetime.datetime(2010,1,1)
-        for line in self.history.split('\n'):
-            obj = yaml.load(line)
-            if obj:
-                obj = obj[0]
-                timestamps.append(time.mktime(obj[0].timetuple()))
-                if obj[0] - last_date > datetime.timedelta(days=3):
-                    labels.append(obj[0].strftime('%b %d'))
-                    last_date = obj[0]
-                else:
-                    labels.append('')
-                intervals.append(obj[3])
-                learned_until.append(time.mktime(obj[4].timetuple()))
-        if len(timestamps) < 2:
-            return {'timestamps':[],'labels':[],'intervals':[],'learned_ranges':[]}
-        first = min(timestamps)
-        span = max(timestamps)-first
-        timestamps = map(lambda x: ((x-first)/float(span)) * RANGE,timestamps)
-        learned_from = map(lambda x: x/RANGE,timestamps)
-        learned_until = map(lambda x: ((x-first)/float(span)),learned_until)
-        learned = zip(timestamps, learned_until)
-        return {'timestamps':timestamps,
-                'labels':labels,
-                'intervals':intervals,
-                'learned_ranges':['%s,%s'%s for s in zip(learned_from,learned_until)]}
+        times, a, b, intervals, learned_until = zip(*history)
+        chart.add_line(times, intervals, 'Interval')
+        return {'interval':chart}
         
     def rendered(self):
         if not hasattr(self, '_rendered') or self._rendered is None:
             self._rendered = self.parent().render_card(self.key().name().split('-',1))
         return self._rendered
+        
+        
+class DailyBoxStats(db.Model):
+    """ Keeps track of daily stats for parent box. """
+    day = db.DateProperty()
+    n_learned = db.IntegerProperty()
+    n_cards = db.IntegerProperty()
 
 
 ### Non-model Classes ###
@@ -704,8 +710,102 @@ class CardRenderer():
         logging.info('errorcard')
         return {'front':error, 'back':error, 'background_color':'#fba6aa'}
         
+        
+class TimelineChart(object):
+    
+    max_date_labels = 7
+    
+    def __init__(self, **kwds):
+        self.gcparams = {}
+        self.lines = []
+        self.ranges = []
+        self.size = kwds.get('size','470x200')
+        self.times = set([])
+    
+    def add_line(self, times, data, label='', color='94c15d',thickness=3):
+        if len(times) > 1:
+            self.times = self.times.union(times)
+            self.lines.append({'times':times,
+                               'data':data,
+                               'label':label,
+                               'color':color,
+                               'thickness':thickness})
+        
+    def add_range_markers(self, range_starts, range_ends):
+        self.ranges.append({'starts':range_starts,'ends':range_ends})
+        
+    def rescale_all(self, rng=100):
+        times = sorted(self.times)
+        first,last = times[0],times[-1]
+        scaledtimes = rescale_datetimes(times, first, last, new_range_max=rng)
+        for l in self.lines:
+            l['scaled'] = rescale_datetimes(l['times'],first, last, new_range_max=rng)
+        for r in self.ranges:
+            r['scaled'] = zip(rescale_datetimes(r['starts'],first, last, new_range_max=1),
+                            rescale_datetimes(r['ends'],first, last, new_range_max=1))
+        self.labels = []
+        self.labels.append((first, scaledtimes[0]))
+        min_distance = (last-first)/self.max_date_labels
+        for (t,s) in zip(times, scaledtimes):
+            if t > self.labels[-1][0] + min_distance:
+                self.labels.append((t,s))
+                
+
+    def render(self):   
+        self.rescale_all()
+        lines = [','.join([str(t) for t in l['scaled']]) + '|' + 
+                 ','.join([str(d) for d in l['data']]) 
+                    for l in self.lines]
+        lines = '|'.join(lines)
+        ranges = [['R,94c15d44,0,%s,%s'%(a,b) for (a,b) in r['scaled']] 
+                    for r in self.ranges]
+        ranges = '|'.join(ranges)
+        legend = '|'.join([l['label'] for l in self.lines])
+        colors = ','.join([l['color'] for l in self.lines])
+        linestyle = '|'.join([str(l['thickness']) for l in self.lines])
+        labels = '|'.join([l[0].strftime('%b %d') for l in self.labels])
+        label_positions = ','.join([str(l[1]) for l in self.labels])
+        max_val = max([max(l['data']) for l in self.lines])
+        ideal_spacing = (100/max_val) * max(max_val//5,1)
+        # Set parameters
+        self.gcparams['cht']  = 'lxy'
+        self.gcparams['chxt'] = 'x,y'
+        self.gcparams['chds'] = '0,100,0,%.0f'%(max_val)
+        self.gcparams['chg']  = '0,%.0f'%ideal_spacing
+        self.gcparams['chf']  = 'bg,s,65432100'
+        # Dynamic parameters
+        self.gcparams['chd']  = 't:'+lines
+        self.gcparams['chco'] = colors
+        self.gcparams['chls'] = linestyle
+        self.gcparams['chm']  = ranges
+        self.gcparams['chdl'] = legend
+        self.gcparams['chxr'] = '1,0,%.2f'%max_val
+        self.gcparams['chxl'] = '0:|'+labels
+        self.gcparams['chxp'] = '0,'+label_positions
+        
+
+    def url(self):
+        self.render()
+        return ("http://chart.apis.google.com/chart?chs=%s&%s"%(self.size,
+            '&'.join(['%s=%s'%(k,v) for (k,v) in self.gcparams.items()])))
+            
+    def img(self):
+        return mark_safe("<img src='%s'/>"%self.url())
 
 ### Helper Functions ###
+
+def rescale_datetimes(dates, old_range_min=None, old_range_max=None, new_range_min=0, new_range_max=1):
+    ascending = sorted(dates)
+    if old_range_min is None: 
+        old_range_min = ascending[0]
+    if old_range_max is None:
+        old_range_max = ascending[-1]
+    omn = time.mktime(old_range_min.timetuple())
+    omx = time.mktime(old_range_max.timetuple())
+    nmn,nmx = new_range_min, new_range_max
+    timestamps = map(lambda x: time.mktime(x.timetuple()), dates)
+    scaled =  map(lambda x: ((x-omn)/float(omx-omn)) * (nmx-nmn) + nmn, timestamps)
+    return scaled
 
 
 def encode_html(text):

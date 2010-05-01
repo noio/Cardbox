@@ -26,11 +26,23 @@
             
             <hr class='space'>
             
-            <h3>Available sets:</h3>
-            <p>Select the sets you want to study from the list below.</p>
-            <div class='span-24' id='browser_available'>
+            <div class='span-12'>
+            <p>Click the button on the right to show the browser. Here you can select more sets to add to your box. </p>
+            </div>
+            
+            <div class='span-12 last'>
+                <div class='button-bar standalone'><ul>
+                    <li><a class='button-add' href='#' onclick='modalBox.show(); return false;'><span class='icon'></span>Add more sets</a></li>
+                </ul></div>
+            </div>
+            
+            <div id='browser-modal-box'>
+                <p class='bottom' style='text-align: right;'><a href='#' onclick='modalBox.hide()'>Close</a></p>
+                <div id='browser_available'>
+            </div>
             </div>
             <script>
+                modalBox = new ModalBox('browser-modal-box');
                 selectedBrowser = new BrowseTable('browser_selected',{
                     {%if box.is_saved%}'filters':{'ids':'{{box.cardsets|join:","}}' },{%endif%}
                     'kind':'cardset',
@@ -49,7 +61,7 @@
                     selectedBrowser.addRow(availableBrowser.getRowData(id));
                     $('id_cardsets').set('value',selectedBrowser.getRowIds().join(','));
                 });
-                availableBrowser.refresh();
+                availableBrowser.update();
             </script>
             
             <hr class='space'>

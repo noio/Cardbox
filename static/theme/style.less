@@ -62,7 +62,7 @@ a                                   {color: @link_blue;}
 
 h3 .faded, h4 .faded                {color: @color + #555555;}
 
-table                               {border: 1px solid @outlines;}
+table                               {}
     th                              {background: @alt_background; font-weight:bold; border-bottom: 2px solid @separator;}
     .table-tr-odd                   {background: @background + #060606;}
     
@@ -95,6 +95,7 @@ ul.cloud                            {padding: 0; list-style: none;}
     .button-stats .icon             {background-position: 0 -60px;}
     .button-cancel .icon            {background-position: 0 -90px;}
     .button-save .icon              {background-position: 0 -120px;}
+    .button-add .icon               {background-position: 0 -150px;}
 
 .box-control                        {border: 1px solid @outlines;}
     .box-top                        {height: 40px; padding: 10px 10px 0 10px;}
@@ -112,12 +113,22 @@ ul.cloud                            {padding: 0; list-style: none;}
     .page-head h3                   {display: inline-block; margin: 0.5em 0;}
     .page-head input                {font-size: 1.5em; margin: 0.15em;}
                                 
-.browser .squish                    {max-height: 400px; overflow: auto; line-height: 1.5;}
+.browser .squish                    {max-height: 400px; overflow: auto; line-height: 1.5; border: 1px solid @outlines;}
     .browser input                  {margin-right: 10px;}
     .browser table                  {margin: 0;}
     .browser table thead            {cursor: pointer;}
     .browser col.column-view        {width: 50px;}
+    .browser col.column-remove      {width: 50px;}
+    .browser col.column-select      {width: 50px;}
+    .browser col.column-add         {width: 50px;}
     .browser col.column-date        {width: 100px;}
+    .browser .button                {width: 100%; height: 20px; display: block; text-indent: -9999px; 
+                                     background: url('icons-actions-small.png') center no-repeat;}
+    .browser .button:hover          {background: @focus url('icons-actions-small.png') center no-repeat;}
+    .browser .button.action-add     {background-position: 50% 0px;}                                                                  
+    .browser .button.action-remove  {background-position: 50% -20px;}                                 
+    .browser .button.action-view    {background-position: 50% -40px;}
+    .browser .button.action-select  {background-position: 50% -60px;}
     
 .cardset-component                  {background: @alt_background; border: 1px solid @outlines;
                                      padding: 10px;}

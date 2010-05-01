@@ -5,18 +5,21 @@
     <div class="span-24 last">
         <h3><span class='faded'/>Stats for box:</span> {{box.title}}</h3>
         <div class='span-8'>
-        <p>This box, titled &ldquo;<strong>{{box.title}}</strong>&rdquo; 
-            has a total of <strong>{{box.stats.n_cards}} cards</strong>, in 
-            <strong>{{box.cardsets|length}} cardset{{box.cardsets|length|pluralize}}</strong>. 
-            You have spent <strong>{{box.time_studied|timedelta}}</strong> studying this box. 
-            At this moment <strong>{{box.stats.n_learned}} cards</strong> are learned, 
-            which is <strong>{{box.stats.percent_learned|floatformat}}%</strong>.</p>
-        <h4>Up next <span class='faded'>in this box</span></h4>
-        <ul class='cloud'>
-            {% for card in box.study_set %}
-                <li class='card-data'><span class='front'>{{card.rendered.front_data|join:", "}}</span>{{card.rendered.back_data|join:", "}}</li>
-            {% endfor %}
-        </ul>
+            <p>This box, titled &ldquo;<strong>{{box.title}}</strong>&rdquo; 
+                has a total of <strong>{{box.stats.n_cards}} cards</strong>, in 
+                <strong>{{box.cardsets|length}} cardset{{box.cardsets|length|pluralize}}</strong>. 
+                You have spent <strong>{{box.time_studied|timedelta}}</strong> studying this box. 
+                At this moment <strong>{{box.stats.n_learned}} cards</strong> are learned, 
+                which is <strong>{{box.stats.percent_learned|floatformat}}%</strong>.</p>
+            <h4>Up next <span class='faded'>in this box</span></h4>
+            <ul class='cloud'>
+                {% for card in box.study_set %}
+                    <li class='card-data'><span class='front'>{{card.rendered.front_data|join:", "}}</span>{{card.rendered.back_data|join:", "}}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class='span-16 last'>
+            {{box.charts.n_cards.img}}
         </div>
         
     </div>

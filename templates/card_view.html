@@ -11,20 +11,7 @@
         <hr class='space'/>
         <h3>Stats</h3>
         <div class='span-12'>
-            <img src='http://chart.apis.google.com/chart?chs=470x200
-&amp;cht=lxy
-&amp;chxt=x,y
-&amp;chds=0,100,0,20
-&amp;chxr=1,0,20,5
-&amp;chg=0,25
-&amp;chd=t:{{card.stats.timestamps|join:","}}|{{card.stats.intervals|join:","}}
-&amp;chxl=0:|{{card.stats.labels|join:"|"}}
-&amp;chxp=0,{{card.stats.timestamps|join:","}}
-&amp;chco=94c15d
-&amp;chm=R,94c15d44,0,{{card.stats.learned_ranges|join:"|R,94c15d44,0,"}}
-&amp;chls=3
-&amp;chf=bg,s,65432100
-&amp;chdl=Interval'>
+            {{card.charts.interval.img}}
         </div>
     </div>
 {% endblock %}

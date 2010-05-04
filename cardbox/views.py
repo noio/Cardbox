@@ -99,9 +99,9 @@ def page_edit(request, kind, name):
     model = page_kinds[kind]
     page = model.get_by_name(name) if name is not None else model()
     if request.method == 'POST':
-        content = request.POST['content']
-        title = request.POST.get('title',None)
-        page.edit(content, title)
+        page.new_content = request.POST['content']
+        page.new_title = request.POST.get('title',None)
+        page.try_to_save()
         if page.errors():
             return respond(request, 'page_edit.html',{'page':page,'errors':page.errors()})
         return HttpResponseRedirect(reverse('cardbox.views.page_view',kwargs={'kind':kind,'name':page.name}))
@@ -155,6 +155,7 @@ def box_edit(request, box_id=None):
 @login_required
 def box_stats(request, box_id):
     box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
+    print box.charts()['n_cards'].img()
     return respond(request, 'box_stats.html',{'box':box})
 
 @login_required
@@ -194,7 +195,6 @@ def browse(request, kind):
 def card_view(request, box_id, card_id):
     box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
     card = models.Card.get_by_key_name(card_id, parent=box)
-    logging.info('CHART URL' + card.chart().url())
     return respond(request, 'card_view.html', {'card':card})
 
 def browse_data(request,kind):

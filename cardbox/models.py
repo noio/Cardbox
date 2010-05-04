@@ -57,32 +57,16 @@ class Page(db.Model):
         if page is None:
             raise Exception('Page "%s" not found'%name)
         return page
-    
+        
     def __init__(self, is_revision=False, **kwds):
-        self._edited = None
+        db.Model.__init__(self, **kwds)
         self._errors = []
         self._validated = False
         self._parsed = None
         self._is_revision = is_revision
-        db.Model.__init__(self, **kwds)
-        
-    @property
-    def title(self):
-        """ Returns a formatted title for this page. 
-        """
-        nm = self.name if self.name else ''
-        if(nm.split(':')[0] in ['factsheet','template','scheduler']):
-            nm = nm.split(':')[-1]
-        nm = nm.replace(':',':_')
-        nm = ' '.join([w.capitalize() for w in nm.split('_')])
-        return nm
-        
-    def get_name(self):
-        if self.name is not None:
-            return self.name
-        else:            
-            return self.key().name()
-    
+        self.title = name_to_title(self.name)
+        self.new_content = None
+
     @property
     def kind_name(self):
         return self.__class__.__name__.lower()
@@ -93,16 +77,14 @@ class Page(db.Model):
         """
         return reverse('cardbox.views.page_view',kwargs={'kind':self.kind_name,'name':self.name})
         
-    def edit(self, new_content, new_title=None):
-        self._edited = new_content
-        self._new_title = new_title if new_title is not None else self.key().name()
-        self._validate_main()
+    def try_to_save(self):
+        self.validate()
         if not self._errors:
             self._save()
             
     def parsed(self):
         if not self._validated:
-            self._validate_main()
+            self.validate()
         return self._parsed if not self._errors else {}
     
     def html_preview(self):
@@ -117,22 +99,22 @@ class Page(db.Model):
                                 })
         
     def source(self):
-        return self._edited if self._edited is not None else self.content
+        return self.new_content if self.new_content is not None else self.content
         
     def errors(self):
         if not self._validated:
-            self._validate_main()
+            self.validate()
         return self._errors
     
-    def _validate_main(self):
+    def validate(self):
         self._errors = []
         self._validated = True
-        t = self._edited if self._edited is not None else self.content
+        t = self.new_content if self.new_content is not None else self.content
         try:
             obj = yaml.safe_load(t)
-            self._validate(obj)
+            self._validate_content(obj)
             meta = obj['meta'] if (obj and 'meta' in obj) else {}
-            self._set_meta_data(meta)
+            self._validate_meta_data(meta)
         except yaml.parser.ParserError, e:
             self._errors.append({'message':'YAML syntax error.','content':e.problem_mark})
         except PageException, e:
@@ -141,33 +123,44 @@ class Page(db.Model):
             logging.info(self._errors)
                                  
         #Validate title
-        if hasattr(self, '_new_title') and self._new_title is not None:
-            try:
-                self._validate_title(self._new_title)
-            except PageException, e:
-                self._errors.append({'message':'Error in title.',
-                                     'content':(e.args[0])})
-                logging.info(self._errors)
-    
-    def _validate_title(self, title):
-        REMOVE = r'[ \_\-:;]+'
-        VALID_TITLE = r'^[a-z]+(\_[a-z0-9]+)*$'
+        try:
+            self._validate_title(self.title)
+        except PageException, e:
+            self._errors.append({'message':'Error in title.',
+                                 'content':(e.args[0])})
+            logging.info(self._errors)
+
+    def _validate_title(self, title):    
+        if title is None:
+            raise PageException("Title is empty.")
         if len(title) < 5:
             raise PageException("Title is too short.")
-        name = re.sub(REMOVE,'_',title).lower()
+        name = title_to_name(title)
         if self.name == name:
-            return
+            return name
+        VALID_NAME = r'^[a-z]+(\_[a-z0-9]+)*$'    
         matched = re.match(VALID_TITLE, name)
         if not matched:
             raise PageException("Title (%s / %s) can only contain letters, numbers, and spaces."%(title,name))
         q = self.__class__.all()
         q.filter('name', name)
-        if q.fetch(1):
-            raise PageException("There is already a page with this title.")
+        other = q.get()
+        if other:
+            raise PageException(mark_safe("There is already a page with this title. ( <a href='%s'>here</a> )"
+                %other.url))
         self.name = name
         return name
+        
+    def _validate_meta_data(self, meta):
+        for key, attr_name in self.meta_keys.items():
+            if key in meta and hasattr(self,attr_name):
+                value = meta[key]
+                if not re.match(r'^[a-zA-Z0-9 ]+$',value):
+                    raise PageException("Meta value for '%s' can only contain letters, numbers and spaces."%value)
+                value = re.sub(r' +',' ',value).lower()
+                setattr(self, attr_name, value)
     
-    def _validate(self, parsed):
+    def _validate_content(self, parsed):
         self._parsed = parsed
     
     def _save(self):
@@ -183,30 +176,17 @@ class Page(db.Model):
             r.put()
             page.put()
         
-        #Check title before saving
-        if self.key().name() == 'none':
-            raise Exception("Cannot save unnamed page.")
         if self._is_revision:
             raise Exception("Cannot save revision.")
-        if self.content != '' and self.content != self._edited:
+        if self.content != '' and self.content != self.new_content:
             differ = dmp.diff_match_patch()
-            patch = differ.patch_toText(differ.patch_make(self._edited, self.content))
-            db.run_in_transaction(txn, self, self._edited, patch)
+            patch = differ.patch_toText(differ.patch_make(self.new_content, self.content))
+            db.run_in_transaction(txn, self, self.new_content, patch)
         else:
-            self.content = self._edited
+            self.content = self.new_content
             self.put()
     
-    def _set_meta_data(self, meta):
-        for key, attr_name in self.meta_keys.items():
-            if key in meta and hasattr(self,attr_name):
-                value = meta[key]
-                if not re.match(r'^[a-zA-Z0-9 ]+$',value):
-                    raise PageException("Meta value for '%s' can only contain letters, numbers and spaces."%value)
-                value = re.sub(r' +',' ',value).lower()
-                setattr(self, attr_name, value)
-        if len(self.meta_keys.keys()):
-            self.put()
-            
+
     def revision(self, number):
         """ Returns a given revision
         """
@@ -275,7 +255,7 @@ class Factsheet(Page):
     meta_subject = db.StringProperty()
     meta_book = db.StringProperty()
     
-    def _validate(self, yaml_obj):
+    def _validate_content(self, yaml_obj):
         if yaml_obj is None:
             raise PageException('The list is empty.')
         columns = yaml_obj['columns']
@@ -323,7 +303,7 @@ class Template(Page):
     DJANGO_VARIABLE_TAG = re.compile(r'{{([a-z0-9_]+)}}')
     DJANGO_CONTROL_TAG = re.compile(r'{%.+%}')
     
-    def _validate(self, yaml_obj):
+    def _validate_content(self, yaml_obj):
         if not isinstance(yaml_obj, dict):
             raise PageException('A template cannot be empty.')
         front_template = yaml_obj.get('front','')
@@ -361,7 +341,7 @@ class Template(Page):
 
 
 class Scheduler(Page):
-    def _validate(self, yaml_obj):
+    def _validate_content(self, yaml_obj):
         self._parsed = compile(yaml_obj,'<string>','eval')
         
     def reschedule(self, card):
@@ -474,29 +454,36 @@ class Box(db.Model):
     def stats(self):
         if not hasattr(self, '_stats') or self._stats is None:
             n_cards = len(list(self.all_card_ids()))
-            available = Card.all(keys_only=True).ancestor(self)
-            available.order('learned_until')
-            available.filter('learned_until <', datetime.datetime.now())
-            available.filter('enabled',True)
-            n_available = available.count()
-            n_learned = n_cards - n_available
+            learned = Card.all(keys_only=True).ancestor(self)
+            learned.order('learned_until')
+            learned.filter('learned_until >', datetime.datetime.now())
+            learned.filter('enabled',True)
+            n_learned = learned.count()
             percentage = (n_learned/float(n_cards))*100.0 if n_cards > 0 else 0.0
             self._stats = {'percent_learned':percentage,'n_learned':n_learned,'n_cards':n_cards}
         return self._stats
         
     def charts(self):
-        recent =  datetime.date.today() - datetime.timedelta(days=5)
-        recentstats = DailyBoxStats.all().ancestor(self).filter('day >',recent)
-        if recentstats.count(limit=1) < 1:
-            from engine import create_box_stats
-            create_box_stats(self, 20)
-        stats = DailyBoxStats.all().ancestor(self).order('day').fetch(limit=60)
-        data = [(s.day, s.n_cards, s.n_learned) for s in stats]
-        (dates, n_cards, n_learned) = zip(*data)
-        chart = TimelineChart(size='630x250')
-        chart.add_line(dates, n_cards, label='Total cards',color='0000FF')
-        chart.add_line(dates, n_learned, label='Learned')
-        return {'n_cards':chart}
+        if not hasattr(self, '_charts'):
+            recent =  datetime.date.today() - datetime.timedelta(days=2)
+            recentstats = DailyBoxStats.all().ancestor(self).filter('day >',recent)
+            if recentstats.count(limit=1) < 1:
+                from engine import create_box_stats
+                create_box_stats(self, 20)
+            stats = DailyBoxStats.all().ancestor(self).order('day').fetch(limit=60)
+            data = [(s.day, s.n_cards, s.n_learned, s.min_interval, s.max_interval, s.avg_interval) for s in stats]
+            (dates, n_cards, n_learned, min_interval, max_interval, avg_interval) = (zip(*data) if len(data) > 0 else
+                ([],[],[],[],[],[]))
+            chart = TimelineChart(size='630x250')
+            chart.add_line(dates, n_cards, label='Studied',color='7290A6')
+            chart.add_line(dates, n_learned, label='Learned',color='94c15d')
+            interval_chart = TimelineChart(size='630x250')
+            interval_chart.add_line(dates, max_interval, label='Max Interval',color='CCC699')
+            interval_chart.add_line(dates, avg_interval, label='Average Interval',color='000000')
+            interval_chart.add_line(dates, min_interval, label='Min Interval',color='CCC699')
+            interval_chart.add_line_fill('FFF9CC88',0,2)
+            self._charts = {'n_cards':chart,'interval':interval_chart}
+        return self._charts
         
     def is_empty(self):
         cards = Card.all().ancestor(self).filter('enabled',True).count(limit=1)
@@ -604,12 +591,16 @@ class Card(db.Model):
         
     def state_at(self, date):
         dt = datetime.datetime.combine(date, datetime.time(0))
-        last_state = {'learned':False,'studied':False}
+        last_state = {'learned':False,'studied':False,'interval':0}
         history = yaml.load(self.history)
         if history: 
             for entry in history:
                 if dt > entry[0]:
-                    last_state = {'learned':dt < entry[4],'studied':True}
+                    last_state = {
+                        'interval':entry[3],
+                        'learned':dt < entry[4],
+                        'studied':True
+                    }
         return last_state
         
     def charts(self):
@@ -633,6 +624,9 @@ class DailyBoxStats(db.Model):
     day = db.DateProperty()
     n_learned = db.IntegerProperty()
     n_cards = db.IntegerProperty()
+    avg_interval = db.FloatProperty(default=1.0)
+    min_interval = db.IntegerProperty(default=1)
+    max_interval = db.IntegerProperty(default=1)
 
 
 ### Non-model Classes ###
@@ -718,6 +712,7 @@ class TimelineChart(object):
     def __init__(self, **kwds):
         self.gcparams = {}
         self.lines = []
+        self.line_fills = []
         self.ranges = []
         self.size = kwds.get('size','470x200')
         self.times = set([])
@@ -730,28 +725,34 @@ class TimelineChart(object):
                                'label':label,
                                'color':color,
                                'thickness':thickness})
+    
+    def add_line_fill(self, color, start_line, end_line):
+        self.line_fills.append({'color':color,'start_line':start_line,'end_line':end_line})
         
     def add_range_markers(self, range_starts, range_ends):
         self.ranges.append({'starts':range_starts,'ends':range_ends})
         
     def rescale_all(self, rng=100):
-        times = sorted(self.times)
-        first,last = times[0],times[-1]
-        scaledtimes = rescale_datetimes(times, first, last, new_range_max=rng)
-        for l in self.lines:
-            l['scaled'] = rescale_datetimes(l['times'],first, last, new_range_max=rng)
-        for r in self.ranges:
-            r['scaled'] = zip(rescale_datetimes(r['starts'],first, last, new_range_max=1),
-                            rescale_datetimes(r['ends'],first, last, new_range_max=1))
-        self.labels = []
-        self.labels.append((first, scaledtimes[0]))
-        min_distance = (last-first)/self.max_date_labels
-        for (t,s) in zip(times, scaledtimes):
-            if t > self.labels[-1][0] + min_distance:
-                self.labels.append((t,s))
-                
+        if len(self.times) > 1:
+            times = sorted(self.times)
+            first,last = times[0],times[-1]
+            scaledtimes = rescale_datetimes(times, first, last, new_range_max=rng)
+            for l in self.lines:
+                l['scaled'] = rescale_datetimes(l['times'],first, last, new_range_max=rng)
+            for r in self.ranges:
+                r['scaled'] = zip(rescale_datetimes(r['starts'],first, last, new_range_max=1),
+                                rescale_datetimes(r['ends'],first, last, new_range_max=1))
+            self.labels = []
+            self.labels.append((first, scaledtimes[0]))
+            min_distance = (last-first)/self.max_date_labels
+            for (t,s) in zip(times, scaledtimes):
+                if t > self.labels[-1][0] + min_distance:
+                    self.labels.append((t,s))
 
-    def render(self):   
+    def render(self):
+        if len(self.times) < 2:
+            self.empty_chart()
+            return
         self.rescale_all()
         lines = [','.join([str(t) for t in l['scaled']]) + '|' + 
                  ','.join([str(d) for d in l['data']]) 
@@ -760,29 +761,35 @@ class TimelineChart(object):
         ranges = [['R,94c15d44,0,%s,%s'%(a,b) for (a,b) in r['scaled']] 
                     for r in self.ranges]
         ranges = '|'.join(ranges)
+        linefills = '|'.join(['b,%s,%d,%d,0'%(lf['color'],
+                                              lf['start_line'],
+                                              lf['end_line']) for lf in self.line_fills])
         legend = '|'.join([l['label'] for l in self.lines])
         colors = ','.join([l['color'] for l in self.lines])
         linestyle = '|'.join([str(l['thickness']) for l in self.lines])
         labels = '|'.join([l[0].strftime('%b %d') for l in self.labels])
         label_positions = ','.join([str(l[1]) for l in self.labels])
         max_val = max([max(l['data']) for l in self.lines])
-        ideal_spacing = (100/max_val) * max(max_val//5,1)
+        ideal_spacing = (100/float(max_val)) * max(max_val//5.0,1)
         # Set parameters
         self.gcparams['cht']  = 'lxy'
         self.gcparams['chxt'] = 'x,y'
         self.gcparams['chds'] = '0,100,0,%.0f'%(max_val)
-        self.gcparams['chg']  = '0,%.0f'%ideal_spacing
+        self.gcparams['chg']  = '0,%.2f'%ideal_spacing
         self.gcparams['chf']  = 'bg,s,65432100'
         # Dynamic parameters
         self.gcparams['chd']  = 't:'+lines
         self.gcparams['chco'] = colors
         self.gcparams['chls'] = linestyle
-        self.gcparams['chm']  = ranges
+        self.gcparams['chm']  = ranges + ('|' if ranges and linefills else '') + linefills
         self.gcparams['chdl'] = legend
         self.gcparams['chxr'] = '1,0,%.2f'%max_val
         self.gcparams['chxl'] = '0:|'+labels
         self.gcparams['chxp'] = '0,'+label_positions
         
+    def empty_chart(self):
+        self.gcparams['chst'] = 'd_text_outline'
+        self.gcparams['chld'] = '8A1F11|16|h|FFFFFF|b|Generating+data.+Come+back+in+a+minute.'
 
     def url(self):
         self.render()
@@ -793,6 +800,18 @@ class TimelineChart(object):
         return mark_safe("<img src='%s'/>"%self.url())
 
 ### Helper Functions ###
+
+def title_to_name(title):
+    REMOVE = r'[ \_\-]+'
+    VALID_TITLE = r'^[a-z]+(\_[a-z0-9]+)*$'
+    return re.sub(REMOVE,'_',title).lower()
+    
+def name_to_title(name):
+    if name is None: 
+        return ''
+    nm = ' '.join([w.capitalize() for w in name.split('_')])
+    return nm
+    
 
 def rescale_datetimes(dates, old_range_min=None, old_range_max=None, new_range_min=0, new_range_max=1):
     ascending = sorted(dates)
@@ -807,6 +826,7 @@ def rescale_datetimes(dates, old_range_min=None, old_range_max=None, new_range_m
     scaled =  map(lambda x: ((x-omn)/float(omx-omn)) * (nmx-nmn) + nmn, timestamps)
     return scaled
 
+### Generic Helper Functions
 
 def encode_html(text):
     a = ((r'&(?!\#160;)', '&#38;'),
@@ -824,5 +844,4 @@ def uri_b64encode(s):
 def uri_b64decode(s):
     return base64.urlsafe_b64decode(s + '=' * (4 - ((len(s) % 4) or 4)))
     
-### Mappers ###
 

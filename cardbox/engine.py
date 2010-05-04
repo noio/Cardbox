@@ -219,22 +219,33 @@ class BoxStatsMapper(Mapper):
         self.date = date
         self.n_cards = 0
         self.n_learned = 0
+        self.total_interval = 0
+        self.min_interval = 1000
+        self.max_interval = 0
         #self.stats = str(stats.key())
         Mapper.__init__(self, **kwds)
         
     def map(self, card):
         state = card.state_at(self.date)
+        iv = state['interval']
+        self.min_interval = min(iv, self.min_interval)
+        self.max_interval = max(iv, self.max_interval)
         if state['studied']:
             self.n_cards += 1
-        if state['learned']:
-            self.n_learned += 1
+            self.total_interval += iv
+            if state['learned']:
+                self.n_learned += 1
         return ([],[])
     
     def finish(self):
         date_string = self.date.strftime('%d-%m-%Y')
+        avg_interval = (self.total_interval / float(self.n_cards)) if self.n_cards > 0 else 0.0
         stats = models.DailyBoxStats(key_name=date_string, 
                                      parent=self.ancestor, 
                                      day=self.date,
                                      n_cards=self.n_cards,
-                                     n_learned=self.n_learned)
+                                     n_learned=self.n_learned,
+                                     avg_interval=avg_interval,
+                                     max_interval=self.max_interval,
+                                     min_interval=self.min_interval)
         stats.put()

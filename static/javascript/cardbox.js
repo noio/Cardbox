@@ -31,7 +31,7 @@ var Ribbon = new Class({
                 ul.setStyle('width',null);
                 ulSize = ul.getComputedSize();
                 totalWidth += (ulSize['border-left-width'] + ulSize['border-right-width']);
-                totalWidth = Math.ceil(totalWidth);
+                totalWidth = Math.ceil(totalWidth+3);
                 div.position({
                      'relativeTo':li,
                      'position':'centerBottom',
@@ -463,7 +463,7 @@ var ModalBox = new Class({
         inner.wraps(this.element);
         this.modal.wraps(inner);
         inner.addEvent('click',function(e){
-            e.stop();
+            e.stopPropagation();
         });
         this.modal.addEvent('click',function(e){
             e.stop();

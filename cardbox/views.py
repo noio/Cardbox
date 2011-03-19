@@ -33,16 +33,10 @@ from django.utils import simplejson
 
 # Library imports
 import yaml
-import tools.textile as textile
 
 # Local Imports
 import models
 
-### Statics ###
-
-page_kinds = {'list':models.Factsheet,
-              'template':models.Template,
-              'scheduler':models.Scheduler}
 
 ### Decorators for Request Handlers ###
 
@@ -83,61 +77,22 @@ def help(request):
     """ Help page """
     return respond(request, 'help.html')
     
-@login_required
-def page_create(request, kind):
-    return page_edit(request, kind, None)
-   
-def page_view(request, kind, name):
-    model = page_kinds[kind]
-    page = model.get_by_name(name)
-    return respond(request,'page_view.html', {'page':page})
-
-def page_preview(request, kind, name):
-    model = page_kinds[kind]
-    page = model.get_by_name(name)
-    return HttpResponse(page.html_preview())
+def list_view(request, name):
+    factsheet = models.Factsheet.get_by_name(name)
+    return respond(request, 'list_view.html',{'list':factsheet})
     
 @login_required
-def page_edit(request, kind, name):
-    model = page_kinds[kind]
-    page = model.get_by_name(name) if name is not None else model()
-    if request.method == 'POST':
-        page.new_content = request.POST['content']
-        page.title = request.POST.get('title',None)
-        page.try_to_save()
-        if page.errors():
-            return respond(request, 'page_edit.html',{'page':page,'errors':page.errors()})
-        return HttpResponseRedirect(reverse('cardbox.views.page_view',kwargs={'kind':kind,'name':page.name}))
-    return respond(request,'page_edit.html', {'page':page})
+def list_edit(request, name):
+    factsheet = models.Factsheet.get_by_name(name)
+    return respond(request, 'list_edit.html',{'list':factsheet})
     
-def page_json(request, kind, name):
-    model = page_kinds[kind]
-    page = model.get_by_name(name)
-    return HttpResponse(page.json())
-
 @login_required
-def cardset_create(request):
-    return cardset_edit(request)
+def list_create(request):
+    factsheet = models.Factsheet()
+    return respond(request, 'list_edit.html',{'list':factsheet})
     
-def cardset_view(request, set_id):
-    cardset = get_by_id_or_404(request, models.Cardset, set_id, require_owner=False)
-    return respond(request, 'cardset.html',{'cardset':cardset})
-
-@login_required
-def cardset_edit(request, set_id=None):
-    cardset = get_by_id_or_404(request, models.Cardset, set_id, require_owner=False, new_if_id_none=True)
-    factsheets = models.Factsheet.all().fetch(1000)
-    templates = models.Template.all().fetch(1000)
-    if request.method == 'POST':
-        cardset.title = request.POST['title']
-        cardset.factsheet = models.Factsheet.get_by_name(request.POST['factsheet'])
-        cardset.template = models.Template.get_by_name(request.POST['template'])
-        #TODO: Validate mapping
-        cardset.mapping = yaml.dump(simplejson.loads(request.POST['mapping']))
-        cardset.set_meta_data()
-        cardset.put()
-        return HttpResponseRedirect(reverse('cardbox.views.cardset_view',args=[cardset.key().id()]))
-    return respond(request, 'cardset_edit.html',{'cardset':cardset, 'factsheets':factsheets,'templates':templates})
+def list_browse(request):
+    return respond(request, 'list_browse.html', {'lists':models.Factsheet.all()})
 
 @login_required
 def box_create(request):
@@ -191,9 +146,6 @@ def next_card(request, box_id):
     card = box.card_to_study()
     return respond(request, 'card_study.html',{'box':box,'card':card})
 
-def browse(request, kind):
-    #print request.GET.items()
-    return respond(request, 'browse.html',{'kind':kind})
     
 @login_required
 def card_view(request, box_id, card_id):
@@ -201,39 +153,6 @@ def card_view(request, box_id, card_id):
     card = models.Card.get_by_key_name(card_id, parent=box)
     return respond(request, 'card_view.html', {'card':card})
 
-def browse_data(request,kind):
-    """ Returns a json object with a list of data of the requested kind
-    """
-    if kind == 'list':
-        model = models.Factsheet
-    elif kind == 'template':
-        model = models.Template
-    elif kind == 'scheduler':
-        model = models.Scheduler
-    elif kind == 'cardset':
-        model = models.Cardset
-    else:
-        raise Http404('Kind not found.')
-    # Apply  filters
-    if 'ids' in request.GET:
-        ids = [int(i) for i in request.GET['ids'].split(',') if i != '']
-        entities = model.get_by_id(ids)
-    else:
-        entities = model.all()
-        for key,value in request.GET.items():
-            if value != '' and hasattr(model,'meta_keys') and key in model.meta_keys:
-                attr_name = model.meta_keys[key]
-                entities.filter(attr_name+' >=',value)
-                entities.filter(attr_name+' <',value+u"\ufffd")
-    headers = ['id','url','title'] + model.meta_keys.keys() + ['date']
-    rows = [[e.name if hasattr(e,'name') else e.key().id_or_name(),
-            e.url,
-            e.title] + 
-            e.meta().values() +
-            [e.modified.strftime('%d/%m/%Y')]
-            for e in entities]
-    return HttpResponse(simplejson.dumps({'headers':headers,'rows':rows}))
-    
 def maintenance(request):
     return HttpResponse("Doing some maintenance, we'll be back really soon.")
 

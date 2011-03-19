@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+  
+<div class='span-24' id='browser'>
+    <ul>
+    {% for list in lists %}
+        <li><a href="{{list.url}}">{{list.name}}</a></li>
+    {% endfor %}
+    </ul>
+</div>
+
+     
+{% endblock %}

@@ -8,7 +8,7 @@ import yaml
 
 # AppEngine Imports
 from google.appengine.dist import use_library
-use_library('django', '1.0')
+use_library('django', '1.2')
 from google.appengine.ext import deferred
 from google.appengine.runtime import DeadlineExceededError
 from google.appengine.ext import db

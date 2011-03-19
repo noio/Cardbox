@@ -6,12 +6,16 @@
         
         <h3>Preview</h3>
         <div class='span-24 splitview'>
-            {%include 'card.html' %}
+            {{card.render}}
         </div>
         <hr class='space'/>
         <h3>Stats</h3>
+       
         <div class='span-12'>
             {{card.charts.interval.img}}
+        </div>
+        <div class='span-12 last'>
+            Learned Until {{card.learned_until}}
         </div>
     </div>
 {% endblock %}

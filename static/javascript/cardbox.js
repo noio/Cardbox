@@ -84,15 +84,14 @@ var Ribbon = new Class({
                 sm.fade('out');
             }
         });
-        if ($chk(this.timer)){
-            $clear(this.timer);
-            this.timer = null;
+        if (!!(this.timer)){
+            clearTimeout(this.timer);
         }
     },
     
     delayClose: function(){
-        if ($chk(this.timer)){
-            $clear(this.timer);
+        if (!!(this.timer)){
+            clearTimeout(this.timer);
         }
         this.timer = this.closeAll.delay(this.options.delay, this);
     },
@@ -105,142 +104,6 @@ var Ribbon = new Class({
     }
 })
 
-/**
- * BrowseTable implements functions for displaying a table
- * for lists of items on the server
- */
-var BrowseTable = new Class({
-    Implements: [Options,Events],
-    options:{
-        kind: null,
-        actions: ['select'],
-        allowedFilters: {'list':['subject','book'],
-                         'cardset':['subject','book']},
-        filters: {},
-        showControl: true
-    },
-
-    initialize: function(id, options){
-        this.setOptions(options);
-        this.element = $(id);
-        this.element.addClass('browser');
-        this.element.set('spinner',{message:'Wait a moment...'});
-        this.control = new Element('form',{'class':'inline'}).inject(new Element('div').inject(this.element));
-        this.element.grab(new Element('div',{'class':'squish'}).grab(new Element('table')));
-        this.table = new HtmlTable(this.element.getElement('table'),{
-            'selectable':true,
-            'sortable':true,
-            'sortReverse':true,
-            'allowMultiSelect':false
-        });
-    },
-    
-    update: function(opts){
-        this.setOptions(opts);
-        this.redraw();
-        this.refresh();
-    },
-    
-    refresh: function(){
-        this.table.element.spin();
-        var dataRequest = new Request.JSON({
-            url: "/"+this.options.kind.toLowerCase()+'/all/data', 
-            onSuccess: function(data){
-                this.addData(data);
-            }.bind(this)
-        }).get(this.options.filters);
-    },
-    
-    redraw: function(){
-        // Draw control bar
-        this.control.empty();
-        if (!this.options.showControl) {return;}
-        var h = this.options.allowedFilters[this.options.kind];
-        if($chk(h)){
-            var label = new Element('label',{'for':'filter-field-select','html':'Filter: '})
-            var select = new Element('select',{'id':'filter-field-select','name':'filter-field'})
-            h.each(function(value, index){                
-                var option = new Element('option',{
-                    'value':value,
-                    'html':value
-                });
-                select.adopt(option);
-            }.bind(this));
-            var label2 = new Element('label',{'for':'filter-value','html':' starts with: '});
-            var field = new Element('input',{'id':'filter-value','type':'text'});
-            this.control.adopt(label, select, label2, field);
-            
-            var o = new Observer(field, function(e){
-                this.addFilter($('filter-field-select').getSelected()[0].get('value'), e);
-            }.bind(this), {'delay':1000});
-        }
-    },
-    
-    addFilter: function(field, value){
-        this.options.filters[field] = value;
-        this.refresh();
-    },
-    
-    addData: function(data){
-        // Redraw table
-        this.table.element.unspin();
-        this.data = data;
-        this.table.empty();
-        var headers = this.data.headers.slice(2);
-        headers.unshift('view');
-        headers = this.options.actions.concat(headers);
-        this.table.setHeaders(headers);
-        this.data.rows.each(function(row,idx){
-            row = row.map(function(r){if (r === null) return '';return r;});
-            this.addRow(row);
-        },this);
-        headers.each(function(header,idx){
-            var col = new Element('col',{'class':'column-'+header})
-            col.inject(this.element.getElement('thead'),'before');
-        }.bind(this))
-    },
-    
-    getNamedRowData: function(id){
-        var rd = this.getRowData(id);
-        return rd.associate(this.data.headers);
-    },
-    
-    getRowData: function(id){
-        return this.element.getElement('tr[id='+id+']').retrieve('rowData');
-    },
-    
-    addRow: function(rowData){
-        if (this.getRowIds().contains(rowData[0])) {return;}
-        var tr = rowData.slice(2);
-        var viewLink = new Element('a',{'class':'button action-view',
-                                        'href':rowData[1],
-                                        'target':'_blank',
-                                        'html':'view'});
-        tr.unshift(viewLink);
-        this.options.actions.each(function(a,idx){
-            var action = new Element('a',{'href':'#',
-                                          'html':a,
-                                          'class':'button action-'+a});
-            action.addEvent('click',function(element){
-                this.fireEvent('action_'+a,[rowData[0]]);
-            }.bind(this));
-            tr.unshift(action);
-        },this);
-        var rowElement = this.table.push(tr).tr;
-        rowElement.set('id',rowData[0]);
-        rowElement.store('rowData',rowData);
-    },
-    
-    removeRow: function(id){
-        return this.element.getElement('tr[id='+id+']').dispose();
-    },
-    
-    getRowIds: function(){
-        return this.element.getElements('tbody tr').map(function(el){
-            return el.retrieve('rowData')[0];
-        });
-    }
-});
 
 
 /**
@@ -329,6 +192,73 @@ var MappingSelector = new Class({
     }
 });
 
+var ListEditor = new Class({
+    Implements: [Options],
+    options:{
+        fieldNamePrefix:'list'
+    },
+
+    initialize: function(table,options){
+        this.table = document.id(table);
+        this.setOptions(options);
+        this.checkEmpty();
+        this.wrapCells();
+        this.setFieldNames();
+        this.checkExpansion();
+    },
+    
+    wrapCells: function(){
+        var cells = this.table.getElements('th,td');
+        cells.each(function(cell){
+            if (!cell.getElement('input')){
+                var value = cell.get('html');
+                cell.set('html','<input type="text" value="'+value+'">');
+            }
+        },this);
+    },
+    
+    setFieldNames: function(){
+        var headers = this.table.getElements('th');
+        var prefix  = this.options.fieldNamePrefix
+        headers.each(function(header, i){
+            header.getElement('input').setProperty('name', prefix+'-header-'+i)
+        },this);
+        var rows = this.table.getElements('tbody tr');
+        rows.each(function(row, i){
+            var cells = row.getElements('td');
+            cells.each(function(cell, j){
+                cell.getElement('input').setProperty('name', prefix+'-row-'+i+'-col-'+j);
+            },this);
+        },this);
+    },
+    
+    checkEmpty: function(){
+        var cells = this.table.getElements('th,td');
+        if (cells.length == 0){
+            var headerRow = Element('tr').adopt([Element('th'),Element('th')]);
+            this.table.getElement('thead').adopt(headerRow);
+            for(var i=0; i<3; i++){
+                var row = Element('tr').adopt([Element('td'),Element('td')]);
+                this.table.getElement('tbody').adopt(row);
+            }
+        }
+    },
+    
+    checkExpansion: function(){
+        var lastRow = this.table.getElements('tr').getLast().getElements('td')
+        var lastRowUsed = lastRow.some(function(td){
+            return td.getElement('input').getProperty('value');
+        });
+        if (lastRowUsed) {
+            var newRow = Element('tr');
+            newRow.adopt(lastRow.map(function(i){return new Element('td');}));
+            this.table.getElement('tbody').adopt(newRow);
+            this.wrapCells();
+            this.setFieldNames();
+        }
+    }
+})
+
 
 var StudyClient = new Class({
     Implements: [Options],
@@ -406,14 +336,14 @@ var StudyClient = new Class({
         back_slide.hide();
         this.currentCard.store('front_slide',front_slide);    
         this.currentCard.store('back_slide',back_slide);
-        this.currentCard.addEvent('click',this.flipCard.create({'event':true,'bind':this}));
+        this.currentCard.addEvent('click',this.flipCard.bind(this));
         KeyBinder.bindKey('flip',{'keys': 'space',
                         'description':'flip the current card',
-                        'handler':this.flipCard.create({'event':true,'bind':this})
+                        'handler':this.flipCard.bind(this)
         });
         KeyBinder.bindKey('flip',{'keys': 'enter',
                         'description':'flip the current card',
-                        'handler':this.flipCard.create({'event':true,'bind':this})
+                        'handler':this.flipCard.bind(this)
         });
     },
     
@@ -435,11 +365,11 @@ var StudyClient = new Class({
         this.currentCard.retrieve('back_slide').toggle();
         KeyBinder.bindKey('flip',{'keys': 'enter',
                         'description':'answered correctly',
-                        'handler':this.sendCard.create({arguments:true,bind:this})
+                        'handler':this.sendCard.pass(true,this)
         });
         KeyBinder.bindKey('flip',{'keys': 'space',
                         'description':'answered wrong',
-                        'handler':this.sendCard.create({arguments:false,bind:this})
+                        'handler':this.sendCard.pass(false,this)
         });
     },
     

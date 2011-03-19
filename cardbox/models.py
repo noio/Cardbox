@@ -25,7 +25,6 @@ from django.core.urlresolvers import reverse
 
 # Library Imports
 import tools.diff_match_patch as dmp
-import tools.textile as textile
 
 ### Constants ###
 EMPTY_FIELD            = mark_safe('&#160;&#160;')
@@ -39,27 +38,69 @@ class PageException(Exception):
 
 
 ### Abstract Models ###
-    
+
 class Page(db.Model):
+    pass
+
+class TimeDeltaProperty(db.Property):
+    def get_value_for_datastore(self, model_instance):
+        td = super(TimeDeltaProperty, self).get_value_for_datastore(model_instance)
+        if td is not None:
+            return (td.seconds + td.days * 86400)
+        return None
+
+    def make_value_from_datastore(self, value):
+        if value is not None:
+            return datetime.timedelta(seconds=value)
+
+
+### Models ###
+
+class Account(db.Model):
+    user_id = db.StringProperty(required=True)
+    google_user = db.UserProperty(auto_current_user_add=True)
+    created = db.DateTimeProperty(required=True, auto_now_add=True)
+    modified = db.DateTimeProperty(required=True, auto_now=True)
+    editor = db.UserProperty(required=True, auto_current_user=True)
+    nickname = db.StringProperty(required=True)
+    year_of_birth = db.IntegerProperty()
+    
+    has_studied = db.BooleanProperty(default=False)
+    
+    # Current user's Account.  Updated by middleware.AddUserToRequestMiddleware.
+    current_user_account = None
+    
+    def my_boxes(self):
+        boxes = Box.all().filter('owner',self.google_user)
+        return boxes
+
+
+class Revision(db.Model):
+    content = db.TextProperty()
+    editor = db.UserProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
+    number = db.IntegerProperty(required=True)
+    
+class Factsheet(db.Model):
     content = db.TextProperty(default='')
     name = db.StringProperty()
     modified = db.DateTimeProperty(auto_now=True)
     editor = db.UserProperty(auto_current_user=True)
     revision_number = db.IntegerProperty(default=1)
     
-    meta_keys = {}
+    meta_keys = {'subject':'meta_subject',
+                 'book':'meta_book'}
+    meta_subject = db.StringProperty()
+    meta_book = db.StringProperty()
     
     @classmethod
     def get_by_name(cls, name):
-        """ Returns a page subclass with the given name, creates one if required.
+        """ Returns a factsheet with the given name.
         """
-        if cls == Page:
-            raise Exception('Page is not a storable model.')
-        else:
-            page = cls.all().filter('name =',name).get()
-        if page is None:
+        factsheet = Factsheet.all().filter('name =',name).get()
+        if factsheet is None:
             raise Exception('Page "%s" not found'%name)
-        return page
+        return factsheet
         
     def __init__(self, is_revision=False, **kwds):
         db.Model.__init__(self, **kwds)
@@ -69,16 +110,12 @@ class Page(db.Model):
         self._is_revision = is_revision
         self.title = name_to_title(self.name)
         self.new_content = None
-
-    @property
-    def kind_name(self):
-        return self.__class__.__name__.lower()
     
     @property
     def url(self):
         """ Returns the view-url for this page. 
         """
-        return reverse('cardbox.views.page_view',kwargs={'kind':self.kind_name,'name':self.name})
+        return reverse('cardbox.views.list_view',kwargs={'name':self.name})
         
     def try_to_save(self):
         self.validate()
@@ -89,17 +126,9 @@ class Page(db.Model):
         if not self._validated:
             self.validate()
         return self._parsed if not self._errors else {}
-    
-    def html_preview(self):
-        return None
         
     def meta(self):
-        return dict([(key, getattr(self, attr_name)) for key, attr_name in self.meta_keys.items()])
-        
-    def json(self):
-        return simplejson.dumps({'name':self.name,
-                                 'content':self.content
-                                })
+        return dict([(key, getattr(self, attr)) for key, attr in self.meta_keys.items()])
         
     def source(self):
         return self.new_content if self.new_content is not None else self.content
@@ -121,7 +150,7 @@ class Page(db.Model):
         except yaml.parser.ParserError, e:
             self._errors.append({'message':'YAML syntax error.','content':e.problem_mark})
         except PageException, e:
-            self._errors.append({'message':'Error in %s format.'% self.kind_name,
+            self._errors.append({'message':'Error in list format.',
                                  'content':(e.args[0])})
             logging.info(self._errors)
                                  
@@ -210,53 +239,6 @@ class Page(db.Model):
                                       number=earliest.number,
                                       is_revision=True)
         return revised_page
-
-
-class TimeDeltaProperty(db.Property):
-    def get_value_for_datastore(self, model_instance):
-        td = super(TimeDeltaProperty, self).get_value_for_datastore(model_instance)
-        if td is not None:
-            return (td.seconds + td.days * 86400)
-        return None
-
-    def make_value_from_datastore(self, value):
-        if value is not None:
-            return datetime.timedelta(seconds=value)
-
-
-### Models ###
-
-class Account(db.Model):
-    user_id = db.StringProperty(required=True)
-    google_user = db.UserProperty(auto_current_user_add=True)
-    created = db.DateTimeProperty(required=True, auto_now_add=True)
-    modified = db.DateTimeProperty(required=True, auto_now=True)
-    editor = db.UserProperty(required=True, auto_current_user=True)
-    nickname = db.StringProperty(required=True)
-    year_of_birth = db.IntegerProperty()
-    
-    has_studied = db.BooleanProperty(default=False)
-    
-    # Current user's Account.  Updated by middleware.AddUserToRequestMiddleware.
-    current_user_account = None
-    
-    def my_boxes(self):
-        boxes = Box.all().filter('owner',self.google_user)
-        return boxes
-
-
-class Revision(db.Model):
-    content = db.TextProperty()
-    editor = db.UserProperty(required=True)
-    created = db.DateTimeProperty(auto_now_add=True)
-    number = db.IntegerProperty(required=True)
-    
-class Factsheet(Page):
-    kind_name = 'list'
-    meta_keys = {'subject':'meta_subject',
-                 'book':'meta_book'}
-    meta_subject = db.StringProperty()
-    meta_book = db.StringProperty()
     
     def _validate_content(self, yaml_obj):
         if yaml_obj is None:
@@ -266,7 +248,7 @@ class Factsheet(Page):
         d = {}
         row_order =[]
         for index,i in enumerate(rows):
-            if isinstance(rows,dict):
+            if isinstance(rows,dict):  # TODO: Deprecate dict format.
                 row_key, row = str(i), rows[i]
             else:
                 if not isinstance(i[0],basestring):
@@ -284,23 +266,14 @@ class Factsheet(Page):
             d[row_key] = dict(zip(columns, row))
         self._parsed = {'rows':d,'order':row_order,'columns':columns}
         
-    def html_preview(self):
-        if not self.errors():
-            return render_to_string('factsheet.html',{'order':self.parsed()['order'],'rows':self.rows()})
-        else:
-            return "No preview"
-            
-    def json(self):
-        return simplejson.dumps({'name':self.name,
-                                 'columns':self.columns(),
-                                 'sample':random.choice(self.rows().values())
-                                })
-        
+    def row_order(self):
+        return self.parsed().get('order',[])
+    
     def columns(self):
         return self.parsed().get('columns',[])
         
     def row_ids(self):
-        return iter(self.parsed()['rows'])
+        return self.parsed()['rows'].keys()
         
     def rows(self):
         return self.parsed()['rows']
@@ -311,23 +284,7 @@ class Template(Page):
 
 
 class Scheduler(Page):
-    def _validate_content(self, yaml_obj):
-        self._parsed = compile(yaml_obj,'<string>','eval')
-        
-    def reschedule(self, card):
-        def days(d):
-            return datetime.timedelta(days=d)
-        def minutes(m):
-            return datetime.timedelta(minutes=m)
-        gb = {'__builtins__':{}}
-        lc = {'days':days,
-              'minutes':minutes,
-              'max':max,
-              'min':min,
-              'last_correct':card.last_correct,
-              'last_studied':card.last_studied,
-              'interval':card.interval}
-        card.learned_until = eval(self.parsed(),gb,lc).replace(microsecond=0)
+    pass
 
 
 class Cardset(db.Model):
@@ -341,27 +298,12 @@ class Cardset(db.Model):
     template = db.ReferenceProperty(Template)
     mapping = db.TextProperty(default='')
     
-    meta_keys = {'subject':'meta_subject',
-                 'book':'meta_book'}
-    meta_subject = db.StringProperty()
-    meta_book = db.StringProperty()
-    
     @property
     def url(self):
         """ Returns the view url for this cardset. 
         """
         return reverse('cardbox.views.cardset_view',args=[self.key().id()])
         
-    def meta(self):
-        return dict([(key, getattr(self, attr_name)) for key, attr_name in self.meta_keys.items()])
-        
-    def set_meta_data(self):
-        keys = self.meta_keys.keys()
-        for sub in [self.factsheet, self.template]:
-            for k in keys:
-                if k in sub.meta_keys:
-                    setattr(self, self.meta_keys[k], getattr(sub, sub.meta_keys[k]))
-    
     def random_card(self):
         """ Renders a random card from connected factsheet. Renders a 'None'
             card if factsheet not found or is empty.
@@ -411,7 +353,15 @@ class Box(db.Model):
         self.put()
         
     def reschedule_card(self, card):
-        self.scheduler.reschedule(card)
+        """ Returns new date when card will be available """
+        days         = lambda d: datetime.timedelta(days=d)
+        minutes      = lambda m: datetime.timedelta(minutes=m)
+        last_correct = card.last_correct
+        last_studied = card.last_studied
+        interval     = card.interval
+        # Schedule
+        learned_until = max(last_studied + minutes(1), last_correct + days((interval-1)*2))
+        return learned_until.replace(microsecond=0)
         
     def stats(self):
         if not hasattr(self, '_stats') or self._stats is None:
@@ -527,7 +477,7 @@ class Card(db.Model):
                 self.interval -= 1
             self.last_studied = now
             self.interval = min(12,max(1, self.interval))
-            reschedule(self)
+            self.learned_until = learned_until
             log_line = yaml.dump([[now,
                                    int(self.n_correct), 
                                    int(self.n_wrong), 
@@ -537,7 +487,7 @@ class Card(db.Model):
             self.put()
         
         box = self.parent()
-        reschedule = box.reschedule_card
+        learned_until = box.reschedule_card(self)
         now = datetime.datetime.now().replace(microsecond=0)
         db.run_in_transaction(txn)
         box.update_time_studied()
@@ -611,10 +561,6 @@ class Card(db.Model):
         for k in base.keys():
             base[k] = mark_safe('<span class="tfield" id="tfield_%s">%s</span>'%(k,encode_html(base[k])))
         # Apply the template
-        try:
-            logging.info(template.render(Context(base)))
-        except Exception as e:
-            logging.info(e)
         return template.render(Context(base))
         
     def rendered(self):

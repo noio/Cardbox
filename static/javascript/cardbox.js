@@ -403,7 +403,6 @@ var StudyClient = new Class({
         boxInfo.adopt(this.cardContainer.getElement('.box-info').show());
         var front_slide = new Fx.Slide(this.currentCard.getElement('div.front'));
         var back_slide = new Fx.Slide(this.currentCard.getElement('div.back'));
-        this.currentCard.getElement('p.flip').show();
         back_slide.hide();
         this.currentCard.store('front_slide',front_slide);    
         this.currentCard.store('back_slide',back_slide);

@@ -1,26 +1,13 @@
 import logging, os,sys
 
-# Google App Engine imports.
-# Declare the Django version we need.
-from google.appengine.dist import use_library
-use_library('django', '1.2')
+
+import appengine_config
+
+# AppEngine imports.
 from google.appengine.ext.webapp import util
 
-# Fail early if we can't import Django 1.x.  Log identifying information.
-import django
-logging.info('django.__file__ = %r, django.VERSION = %r',
-             django.__file__, django.VERSION)
-assert django.VERSION[0] >= 1, "This Django version is too old"
-
-
-
-# Must set this env var before importing any part of Django
-# 'project' is the name of the project created with django-admin.py
-os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-# Force Django to reload its settings.
-from django.conf import settings
-settings._target = None
-#sys.path.append("~/recmd")
+# Import webapp.template.  This makes most Django setup issues go away.
+from google.appengine.ext.webapp import template
 
 # Import various parts of Django.
 import django.core.handlers.wsgi

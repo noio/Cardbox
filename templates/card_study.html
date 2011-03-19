@@ -1,6 +1,6 @@
 {% load cardbox_filters %}
 <div>
-    {% include 'card.html' %}
+    {{card.rendered}}
    
     <form action="{% url cardbox.views.update_card box.key.id %}" method="post">
         <input class='card_id' type="hidden" name="card_id" value="{{card.key.name}}"/>

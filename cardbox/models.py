@@ -16,19 +16,22 @@ from google.appengine.ext.db import Key
 from google.appengine.ext.db import BadValueError, KindError
 
 # Django Imports
-import django.template as django_templates
+import django.template as django_template
+from django.template import Context, TemplateDoesNotExist
 from django.utils.safestring import mark_safe
-from django.template.loader import render_to_string
+from django.template.loader import render_to_string, get_template
 from django.utils import simplejson
 from django.core.urlresolvers import reverse
-
 
 # Library Imports
 import tools.diff_match_patch as dmp
 import tools.textile as textile
 
-# Local Imports
-
+### Constants ###
+EMPTY_FIELD            = mark_safe('&#160;&#160;')
+RE_DJANGO_VARIABLE_TAG = re.compile(r'{{([a-z0-9_]+)}}')
+RE_CARD_FRONT          = re.compile('<!--FRONT-->(.*?)<!--/FRONT-->',re.S)
+RE_CARD_BACK           = re.compile('<!--BACK-->(.*?)<!--/BACK-->',re.S)
 
 ### Exceptions ###
 class PageException(Exception):
@@ -304,45 +307,7 @@ class Factsheet(Page):
 
 
 class Template(Page):
-    
-    DJANGO_VARIABLE_TAG = re.compile(r'{{([a-z0-9_]+)}}')
-    DJANGO_CONTROL_TAG = re.compile(r'{%.+%}')
-    
-    def _validate_content(self, yaml_obj):
-        if not isinstance(yaml_obj, dict):
-            raise PageException('A template cannot be empty.')
-        front_template = yaml_obj.get('front','')
-        back_template = yaml_obj.get('back','')
-        if(self.DJANGO_CONTROL_TAG.search(front_template) or 
-           self.DJANGO_CONTROL_TAG.search(back_template)):
-           raise PageException('Control tags ( {% tag %} ) are not allowed.')
-        background = yaml_obj.get('background', '#fff9cc')
-        front_vars = self.DJANGO_VARIABLE_TAG.findall(front_template)
-        back_vars = self.DJANGO_VARIABLE_TAG.findall(back_template)
-        all_vars = set(front_vars).union(set(back_vars))
-        self._parsed = {'front':front_template,
-                        'back' :back_template,
-                        'background_color': background,
-                        'variables' : all_vars,
-                        'front_vars': front_vars,
-                        'back_vars': back_vars}
-                        
-    def variables(self):
-        return self.parsed().get('variables',[])
-        
-    def front_vars(self):
-        return self.parsed().get('front_vars',[])
-    
-    def back_vars(self):
-        return self.parsed().get('back_vars',[])
-    
-    def html_preview(self):
-        v = self.variables()
-        row = dict(zip(v,v))
-        return mark_safe(
-            '<div class="splitview">'+
-            render_to_string('card.html',{'card':CardRenderer(row=row,template=self)})
-            +'</div>')
+    pass
 
 
 class Scheduler(Page):
@@ -396,12 +361,6 @@ class Cardset(db.Model):
             for k in keys:
                 if k in sub.meta_keys:
                     setattr(self, self.meta_keys[k], getattr(sub, sub.meta_keys[k]))
-            
-    def render_card(self, card_id):
-        return CardRenderer(template=self.template,
-                            factsheet=self.factsheet,
-                            card_id=card_id,
-                            mapping=self.mapping)
     
     def random_card(self):
         """ Renders a random card from connected factsheet. Renders a 'None'
@@ -450,6 +409,9 @@ class Box(db.Model):
             self.time_studied += diff
         self.last_studied = now
         self.put()
+        
+    def reschedule_card(self, card):
+        self.scheduler.reschedule(card)
         
     def stats(self):
         if not hasattr(self, '_stats') or self._stats is None:
@@ -506,6 +468,7 @@ class Box(db.Model):
         
     def card_to_study(self):
         study_set = self.study_set()
+        # Add cards to the 'study set', a subset to focus on.
         if len(study_set) < self.study_set_size/2:
             available = Card.all().ancestor(self)
             available.filter('enabled',True)
@@ -513,6 +476,7 @@ class Box(db.Model):
             available = list(available.fetch(100))
             logging.info("available cards: %d"%len(available))
             
+            # TODO: Why do I filter this locally and not in the datastore?
             available = filter(lambda x: not x.in_study_set, available)
             logging.info("available cards filtered: %d"%len(available))
             
@@ -536,15 +500,6 @@ class Box(db.Model):
         for c in cardsets:
             output.extend(c.all_ids())
         return output
-    
-    def render_card(self, id_tuple):
-        set_id, card_id = id_tuple
-        set_id = int(set_id)
-        if set_id in self.cardsets:
-            cardset = Cardset.get_by_id(set_id)
-            return cardset.render_card(card_id)
-        else:
-            raise Exception("Trying to render card from set that is not in box.")
 
                     
 class Card(db.Model):
@@ -572,7 +527,7 @@ class Card(db.Model):
                 self.interval -= 1
             self.last_studied = now
             self.interval = min(12,max(1, self.interval))
-            scheduler.reschedule(self)
+            reschedule(self)
             log_line = yaml.dump([[now,
                                    int(self.n_correct), 
                                    int(self.n_wrong), 
@@ -582,7 +537,7 @@ class Card(db.Model):
             self.put()
         
         box = self.parent()
-        scheduler = box.scheduler
+        reschedule = box.reschedule_card
         now = datetime.datetime.now().replace(microsecond=0)
         db.run_in_transaction(txn)
         box.update_time_studied()
@@ -591,7 +546,7 @@ class Card(db.Model):
         self.last_studied = datetime.datetime.now().replace(microsecond=0)
         self.put()
         
-    def cardset(self):
+    def get_cardset(self):
         if not hasattr(self, '_cardset'):
             self._cardset = Cardset.get_by_id(int(self.key().name().split('-',1)[0]))
         return self._cardset
@@ -624,16 +579,51 @@ class Card(db.Model):
         return {'interval':chart}
         
     def render(self):
-        template_name = self.cardset().template.key().name().split(':')[1]
-        template_name = 'large_centered'
-        template = django.template.loader.get_template(template_name+'.html')
+        # Fetch vars
+        factsheet     = self.get_cardset().factsheet
+        mapping       = yaml.load(self.get_cardset().mapping) #TODO Load yaml in cardset, not here
+        template_name = self.get_cardset().template.key().name().split(':')[1]
+        row_id        = self.key().name().split('-',1)[1]
+        row           = factsheet.rows().get(row_id,None)
+        try:
+            template_string = open('templates/cards/'+template_name+'.html').read()
+        except IOError:
+            return self.render_error("Template '%s' not found."%(template_name,))
+        template = django_template.Template(template_string)
+        if factsheet is None:
+            return self.render_error("Factsheet not found or empty.")
+        if factsheet.errors():
+            return self.render_error("Factsheet contains errors.")
+        if row is None:
+            return self.render_error("Card not found in factsheet.")
+        # Actual rendering
+        front_vars = set(RE_DJANGO_VARIABLE_TAG.findall(RE_CARD_FRONT.findall(template_string)[0]))
+        back_vars  = set(RE_DJANGO_VARIABLE_TAG.findall(RE_CARD_BACK.findall(template_string)[0]))
+        variables  = front_vars | back_vars
+        base       = dict((v,EMPTY_FIELD) for v in variables)
+        base.update(row)
+        base.update(((newkey, base[oldkey]) for (newkey, oldkey) in mapping.items()))
+        # Extract the base values first, without wrapping or templating
+        front_data = filter(lambda x: x != EMPTY_FIELD,(mark_safe(base[d]) for d in front_vars))
+        back_data = filter(lambda x: x != EMPTY_FIELD,(mark_safe(base[d]) for d in back_vars))
+        back_data = filter(lambda x: x not in front_data, back_data)
+        # Wrap all fields in a span with their ID
+        for k in base.keys():
+            base[k] = mark_safe('<span class="tfield" id="tfield_%s">%s</span>'%(k,encode_html(base[k])))
+        # Apply the template
+        try:
+            logging.info(template.render(Context(base)))
+        except Exception as e:
+            logging.info(e)
+        return template.render(Context(base))
         
     def rendered(self):
-        self.render()
         if not hasattr(self, '_rendered') or self._rendered is None:
-            self._rendered = self.parent().render_card(self.key().name().split('-',1))
+            self._rendered = self.render()
         return self._rendered
         
+    def render_error(self, message):
+        return render_to_string('cards/error.html',{'message':message})
         
         
 class DailyBoxStats(db.Model):
@@ -647,80 +637,6 @@ class DailyBoxStats(db.Model):
 
 
 ### Non-model Classes ###
-
-class CardRenderer():
-    
-    def __init__(self,template, row=None, factsheet=None, card_id=None, mapping='',safe_mode=True):
-        self.template = template
-        self.row = row
-        self.factsheet = factsheet
-        self.card_id = card_id
-        self.mapping = mapping
-        self.safe_mode = safe_mode
-    
-    def rendered(self):        
-        if not hasattr(self, '_rendered') or self._rendered is None:
-            self._rendered = self._render()        
-        return self._rendered
-    
-    def front(self):
-        return self.rendered()['front']
-    
-    def back(self):
-        return self.rendered()['back']
-        
-    def front_data(self):
-        return self.rendered()['front_data']
-
-    def back_data(self):
-        return self.rendered()['back_data']
-        
-    def background_color(self):
-        return self.rendered()['background_color']
-    
-    def _render(self):
-        EMPTY_FIELD = mark_safe('&#160;&#160;')
-        #Errors first
-        if self.template is None:
-            return self._error_card("Template not found or empty.")
-        if self.template.errors():
-            return self._error_card("Template contains errors.")
-        if self.row is None:
-            if self.factsheet is None:
-                return self._error_card("Factsheet not found or empty.")
-            if self.factsheet.errors():
-                return self._error_card("Factsheet contains errors.")
-            if self.card_id is None or self.card_id not in self.factsheet.rows():
-                return self._error_card("Card not found in factsheet.")
-            self.row = self.factsheet.rows()[self.card_id]
-        # Actual rendering
-        base = dict([(v,EMPTY_FIELD) for v in self.template.variables()])
-        base.update(self.row)        
-        mapping = yaml.load(self.mapping)
-        if mapping is not None and mapping != 'None' and mapping != '':
-            base.update([(newkey, base[oldkey]) for newkey, oldkey in mapping.items() if oldkey not in [None,'None']])
-        # Extract the base values first, without wrapping or templating
-        front_data = filter(lambda x: x != EMPTY_FIELD,[mark_safe(base[d]) for d in self.template.front_vars()])
-        back_data = filter(lambda x: x != EMPTY_FIELD,[mark_safe(base[d]) for d in self.template.back_vars()])
-        back_data = filter(lambda x: x not in front_data, back_data)
-        # Wrap all fields in a span with their ID
-        for k in base.keys():
-            base[k] = mark_safe('<span class="tfield" id="tfield_%s">%s</span>'%(k,encode_html(base[k])))
-        # Apply the template
-        front = django_templates.Template(
-            self.template.parsed()['front']).render(django_templates.Context(base))
-        back = django_templates.Template(
-            self.template.parsed()['back']).render(django_templates.Context(base))
-        front = mark_safe(textile.textile(front))
-        back = mark_safe(textile.textile(back))
-        return {'front':front, 'front_data':front_data, 
-                'back':back,   'back_data' :back_data,
-                'background_color':self.template.parsed()['background_color']}
-                
-    def _error_card(self, error):
-        logging.info('errorcard')
-        return {'front':error, 'back':error, 'background_color':'#fba6aa'}
-        
         
 class TimelineChart(object):
     
@@ -861,4 +777,3 @@ def uri_b64encode(s):
 def uri_b64decode(s):
     return base64.urlsafe_b64decode(s + '=' * (4 - ((len(s) % 4) or 4)))
     
-

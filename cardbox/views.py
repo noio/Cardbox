@@ -77,8 +77,11 @@ def admin_required(func):
 def frontpage(request):
     """ Renders the frontpage
     """
-    factsheets = models.Factsheet.all().order('-modified').fetch(10)
-    return respond(request,'front.html', {'factsheets':factsheets})
+    return respond(request,'front.html')
+    
+def help(request):
+    """ Help page """
+    return respond(request, 'help.html')
     
 @login_required
 def page_create(request, kind):
@@ -100,7 +103,7 @@ def page_edit(request, kind, name):
     page = model.get_by_name(name) if name is not None else model()
     if request.method == 'POST':
         page.new_content = request.POST['content']
-        page.new_title = request.POST.get('title',None)
+        page.title = request.POST.get('title',None)
         page.try_to_save()
         if page.errors():
             return respond(request, 'page_edit.html',{'page':page,'errors':page.errors()})
@@ -146,6 +149,7 @@ def box_edit(request, box_id=None):
     if request.method == 'POST':
         box.title = request.POST['title']
         box.cardsets = [int(x) for x in request.POST['cardsets'].split(',') if x != '']
+        box.update_cards()
         box.put()
         return HttpResponseRedirect(reverse('cardbox.views.frontpage'))
     
@@ -155,7 +159,7 @@ def box_edit(request, box_id=None):
 @login_required
 def box_stats(request, box_id):
     box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
-    print box.charts()['n_cards'].img()
+    #print box.charts()['n_cards'].img()
     return respond(request, 'box_stats.html',{'box':box})
 
 @login_required

@@ -37,6 +37,8 @@ class Mapper(object):
     FILTERS = []
     # Set this only keys have to be returned
     KEYS_ONLY = False
+    # Set to run mapper in a specific queue
+    QUEUE = 'default'
 
     def __init__(self, next_mapper=None, ancestor=None):
         self.to_put = []
@@ -73,7 +75,7 @@ class Mapper(object):
     def run(self, batch_size=20):
         """Starts the mapper running."""
         logging.info('%s: Starting.'% (self.__class__.__name__))
-        deferred.defer(self._continue, None, batch_size)
+        deferred.defer(self._continue, None, batch_size, _queue=self.QUEUE)
 
     def _batch_write(self):
         """Writes updates and deletes entities in a batch."""
@@ -118,13 +120,13 @@ class Mapper(object):
             # Write any unfinished updates to the datastore.
             self._batch_write()
             # Queue a new task to pick up where we left off.
-            deferred.defer(self._continue, continue_key, batch_size)
+            deferred.defer(self._continue, continue_key, batch_size, _queue=self.QUEUE)
             return
 
         if continue_key is not None:
             logging.info('%s: batch of %d finished, enqueing.' % (self.__class__.__name__,
                                                                  batch_size))
-            deferred.defer(self._continue, continue_key, batch_size)
+            deferred.defer(self._continue, continue_key, batch_size, _queue=self.QUEUE)
         else:
             self.finish()
             
@@ -141,6 +143,7 @@ class CardCleaner(Mapper):
         will be added by calling create_cards()
     """
     KIND = models.Card
+    QUEUE = 'cardcleaner'
     
     def __init__(self, card_ids=None, **kwds):
         self.card_ids = card_ids
@@ -196,7 +199,7 @@ def create_cards(card_ids, box_key):
         card.put()
     deferred.defer(create_cards,
                    card_ids[BATCH_SIZE:],
-                   box_key)
+                   box_key, _queue='cardcleaner')
    
    
 ### Box Stats Creator ###
@@ -205,15 +208,17 @@ def create_box_stats(for_box, days_back=10):
     logging.info("Creating stats for box %s"%(str(for_box)))
     if isinstance(for_box, basestring):
         for_box = db.Key(for_box)
-    for d in range(days_back, 0, -1):
+    for d in range(1, days_back + 1):
         td = datetime.timedelta(days=d)
         day = datetime.date.today() - td
-        BoxStatsMapper(day, ancestor=for_box).run()
+        mapper = BoxStatsMapper(day, ancestor=for_box)
+        deferred.defer(mapper.run, _countdown = 60 * (d-1))
         
 class BoxStatsMapper(Mapper):
     
     KIND = models.Card
     FILTERS = [('enabled',True)]
+    QUEUE = 'boxstats'
     
     def __init__(self, date, **kwds):
         self.date = date

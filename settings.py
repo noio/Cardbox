@@ -8,6 +8,7 @@ INSTALLED_APPS = ('cardbox',)
 ROOT_PATH = os.path.dirname(__file__)
 ROOT_URLCONF = 'urls'
 MIDDLEWARE_CLASSES = (
+    'google.appengine.ext.appstats.recording.AppStatsDjangoMiddleware',
     #'firepython.middleware.FirePythonDjango',
     #'appstats.recording.AppStatsDjangoMiddleware',
     'django.middleware.common.CommonMiddleware',

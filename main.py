@@ -3,7 +3,7 @@ import logging, os,sys
 # Google App Engine imports.
 # Declare the Django version we need.
 from google.appengine.dist import use_library
-use_library('django', '1.0')
+use_library('django', '1.2')
 from google.appengine.ext.webapp import util
 
 # Fail early if we can't import Django 1.x.  Log identifying information.

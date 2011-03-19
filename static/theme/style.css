@@ -147,6 +147,20 @@ ul.cloud {
 .item-icon.cardset { background-position: 0 -40px; }
 .item-icon.list { background-position: 0 -80px; }
 .item-icon.template { background-position: 0 -120px; }
+.progress {
+  padding: 8px 10px 10px;
+  background: #575757;
+  color: white;
+}
+.progress h3 {
+  color: white;
+  margin-bottom: 0;
+}
+.progress span {
+  float: left;
+  display: block;
+  padding-right: 10px;
+}
 .button-bar {
   background: #ffffff;
   height: 40px;
@@ -214,18 +228,7 @@ ul.cloud {
   display: inline-block;
   background: url('icon-box-medium.png') no-repeat;
 }
-.box-control .progress {
-  float: right;
-  padding: 8px 10px 10px;
-  background: #575757;
-  color: white;
-}
-.box-control .progress h3 { color: white; }
-.box-control .progress span {
-  float: left;
-  display: block;
-  padding-right: 10px;
-}
+.box-control .progress { float: right; }
 .box-divider {
   height: 12px;
   width: 100%;
@@ -337,3 +340,16 @@ ul.cloud {
   border: 1px solid #666666;
 }
 .button-wrong { float: right; }
+.cardstack ul {
+  margin: 0;
+  padding: 0;
+}
+.cardstack li {
+  list-style: none;
+  float: left;
+  width: 32px;
+  height: 20px;
+  margin: 3px;
+  background: #fff9cc;
+  border: 1px solid #ccc699;
+}

@@ -9,21 +9,18 @@
     
     <div class='card-info' style='display:none'>
         <h4>This Card</h4>
+        <p>Correct {{card.n_correct}} times, wrong {{card.n_wrong}} times. In <strong>interval {{card.interval}}</strong>.</p>
         <ul>
-            <li>correct: {{card.n_correct}}</li>
-            <li>wrong: {{card.n_wrong}}</li>
-            <li>interval: {{card.interval}}</li>
-            <li>last studied: {{card.last_studied|date}}</li>
-            <li>learned until: {{card.learned_until|date}}</li>
-            <li>list: {{card.cardset.factsheet.name}}</li>
-            <li><a href="{%url cardbox.views.card_view box.key.id card.key.name %}">stats</a></li>
+            <li><a href='{{card.cardset.factsheet.url}}'>{{card.cardset.factsheet.title}}</a></li>
+            <li><a href="{%url cardbox.views.card_view box.key.id card.key.name %}">Stats for this card</a></li>
         </ul>
     </div>
     
     <div class='box-info' style='display:none'>
-        <h4>This Box</h4>
-        <p>Total time studied: {{box.time_studied|timedelta}}</p>
-        <p>Progress: {{box.stats.percent_learned|floatformat}}%</p>
-
+        <p>Studied for <strong>{{box.time_studied|timedelta}}</strong></p>
+        <div class='progress'>
+            <h3>Cards: {{box.stats.n_cards}}</h3>
+            
+        </div>
     </div>
 </div>

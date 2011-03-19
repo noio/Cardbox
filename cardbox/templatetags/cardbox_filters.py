@@ -8,7 +8,13 @@ def timedelta(value):
     "Formats a timedelta object"
     minutes = value.seconds/60.0
     hours = value.days*24 + minutes//60
-    return "%d hours, %d minutes"%(hours, minutes%60)
+    if hours < 1:
+        hour_text = ''
+    elif hours == 1:
+        hour_text = '1 hour, '
+    else:
+        hour_text = '%d hours, '%hours
+    return "%s%d minute%s"%(hour_text, minutes%60, '' if minutes == 1 else 's')
 
 @register.filter
 def from_datastore(value, arg):

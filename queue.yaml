@@ -1,0 +1,9 @@
+queue:
+- name: default
+  rate: 2/m
+- name: cardcleaner
+  rate: 10/m
+  bucket_size: 20
+- name: boxstats
+  rate: 5/s
+   

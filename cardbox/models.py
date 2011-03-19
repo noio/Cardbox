@@ -139,7 +139,7 @@ class Page(db.Model):
         if self.name == name:
             return name
         VALID_NAME = r'^[a-z]+(\_[a-z0-9]+)*$'    
-        matched = re.match(VALID_TITLE, name)
+        matched = re.match(VALID_NAME, name)
         if not matched:
             raise PageException("Title (%s / %s) can only contain letters, numbers, and spaces."%(title,name))
         q = self.__class__.all()
@@ -213,12 +213,12 @@ class TimeDeltaProperty(db.Property):
     def get_value_for_datastore(self, model_instance):
         td = super(TimeDeltaProperty, self).get_value_for_datastore(model_instance)
         if td is not None:
-            return td.microseconds + (td.seconds + td.days * 86400) * 1000000
+            return (td.seconds + td.days * 86400)
         return None
 
     def make_value_from_datastore(self, value):
         if value is not None:
-            return datetime.timedelta(microseconds=value)
+            return datetime.timedelta(seconds=value)
 
 
 ### Models ###
@@ -273,6 +273,10 @@ class Factsheet(Page):
                 raise PageException("Error in row %s (%s). Row names can only contain letters, numbers and . (period)" % (row_key,u','.join([unicode(b) for b in row])))
             if len(columns) != len(row):
                 raise PageException("Row %s (%s) has wrong length." % (row_key,u','.join([unicode(b) for b in row])))
+            if row_key in d:
+                raise PageException("Row %s (%s) has same first word as (%s)." % (row_key,
+                    u','.join([unicode(b) for b in row]), 
+                    u','.join(d[row_key].values())))
             row_order.append(row_key)
             d[row_key] = dict(zip(columns, row))
         self._parsed = {'rows':d,'order':row_order,'columns':columns}
@@ -285,7 +289,8 @@ class Factsheet(Page):
             
     def json(self):
         return simplejson.dumps({'name':self.name,
-                                 'columns':self.columns()
+                                 'columns':self.columns(),
+                                 'sample':random.choice(self.rows().values())
                                 })
         
     def columns(self):
@@ -426,7 +431,6 @@ class Box(db.Model):
     modified = db.DateTimeProperty(auto_now=True)
     cardsets = db.ListProperty(int)
     scheduler = db.ReferenceProperty(Scheduler)
-    selector = db.TextProperty()
     last_studied = db.DateTimeProperty(default=datetime.datetime(2010,1,1))
     time_studied = TimeDeltaProperty(default=datetime.timedelta(0))
     
@@ -434,12 +438,8 @@ class Box(db.Model):
         super(Box,self).__init__(*args, **kwds)
         if self.scheduler is None:
             self.scheduler = Scheduler.all().get()
-    
-    def put(self, *args, **kwds):
-        db.Model.put(self, *args, **kwds)
-        self._update_cards()
-        
-    def _update_cards(self):
+
+    def update_cards(self):
         from engine import update_cards
         update_cards(self.all_card_ids(), self.key())
     
@@ -454,11 +454,20 @@ class Box(db.Model):
     def stats(self):
         if not hasattr(self, '_stats') or self._stats is None:
             n_cards = len(list(self.all_card_ids()))
-            learned = Card.all(keys_only=True).ancestor(self)
-            learned.order('learned_until')
-            learned.filter('learned_until >', datetime.datetime.now())
-            learned.filter('enabled',True)
-            n_learned = learned.count()
+            cards_query = Card.all(keys_only=False).ancestor(self)
+            #learned.order('learned_until')
+            #learned.filter('learned_until >', datetime.datetime.now())
+            now = datetime.datetime.now()
+            cards_query.order('__key__')
+            cards_query.filter('enabled',True)
+            batch = cards_query.fetch(limit=1000)
+            cards = batch[:]
+            while len(batch) >= 1000:
+                cards_query.filter('__key__ >', batch[-1].key())
+                batch = cards_query.fetch(limit=1000)
+                cards.extend(batch)
+            learned_cards = filter(lambda x: x.learned_until > now,cards)
+            n_learned = len(learned_cards)
             percentage = (n_learned/float(n_cards))*100.0 if n_cards > 0 else 0.0
             self._stats = {'percent_learned':percentage,'n_learned':n_learned,'n_cards':n_cards}
         return self._stats
@@ -469,7 +478,7 @@ class Box(db.Model):
             recentstats = DailyBoxStats.all().ancestor(self).filter('day >',recent)
             if recentstats.count(limit=1) < 1:
                 from engine import create_box_stats
-                create_box_stats(self, 20)
+                create_box_stats(self, days_back=40)
             stats = DailyBoxStats.all().ancestor(self).order('day').fetch(limit=60)
             data = [(s.day, s.n_cards, s.n_learned, s.min_interval, s.max_interval, s.avg_interval) for s in stats]
             (dates, n_cards, n_learned, min_interval, max_interval, avg_interval) = (zip(*data) if len(data) > 0 else
@@ -512,9 +521,10 @@ class Box(db.Model):
                 c.in_study_set = True
                 c.put()
             study_set.extend(refill)
-        #Return first available card.
+        #Return one of first available cards.
         if len(study_set) == 0:
-            return Card.all().ancestor(self).order('learned_until').filter('enabled',True).get()
+            next_unlearned = Card.all().ancestor(self).order('learned_until').filter('enabled',True)
+            return random.choice(next_unlearned.fetch(limit=20))
         study_set.sort(key=lambda x: x.last_studied)
         next_card = random.choice(study_set[:len(study_set)//2+1])
         next_card.studied()
@@ -613,10 +623,17 @@ class Card(db.Model):
         chart.add_line(times, intervals, 'Interval')
         return {'interval':chart}
         
+    def render(self):
+        template_name = self.cardset().template.key().name().split(':')[1]
+        template_name = 'large_centered'
+        template = django.template.loader.get_template(template_name+'.html')
+        
     def rendered(self):
+        self.render()
         if not hasattr(self, '_rendered') or self._rendered is None:
             self._rendered = self.parent().render_card(self.key().name().split('-',1))
         return self._rendered
+        
         
         
 class DailyBoxStats(db.Model):
@@ -754,8 +771,8 @@ class TimelineChart(object):
             self.empty_chart()
             return
         self.rescale_all()
-        lines = [','.join([str(t) for t in l['scaled']]) + '|' + 
-                 ','.join([str(d) for d in l['data']]) 
+        lines = [','.join(['%.1f'%t for t in l['scaled']]) + '|' + 
+                 ','.join(['%.1f'%d for d in l['data']]) 
                     for l in self.lines]
         lines = '|'.join(lines)
         ranges = [['R,94c15d44,0,%s,%s'%(a,b) for (a,b) in r['scaled']] 
@@ -768,14 +785,14 @@ class TimelineChart(object):
         colors = ','.join([l['color'] for l in self.lines])
         linestyle = '|'.join([str(l['thickness']) for l in self.lines])
         labels = '|'.join([l[0].strftime('%b %d') for l in self.labels])
-        label_positions = ','.join([str(l[1]) for l in self.labels])
+        label_positions = ','.join(['%.1f'%l[1] for l in self.labels])
         max_val = max([max(l['data']) for l in self.lines])
         ideal_spacing = (100/float(max_val)) * max(max_val//5.0,1)
         # Set parameters
         self.gcparams['cht']  = 'lxy'
         self.gcparams['chxt'] = 'x,y'
-        self.gcparams['chds'] = '0,100,0,%.0f'%(max_val)
-        self.gcparams['chg']  = '0,%.2f'%ideal_spacing
+        self.gcparams['chds'] = ','.join([('0,100,0,%.0f'%(max_val)) for i in range(len(self.lines))])
+        self.gcparams['chg']  = '0,%.1f'%ideal_spacing
         self.gcparams['chf']  = 'bg,s,65432100'
         # Dynamic parameters
         self.gcparams['chd']  = 't:'+lines

@@ -333,7 +333,8 @@ var MappingSelector = new Class({
 var StudyClient = new Class({
     Implements: [Options],
     options:{
-        stacksize: 4
+        stacksize: 5,
+        stackview: null,
     },
     
     initialize: function(id, box_id, options){
@@ -378,12 +379,13 @@ var StudyClient = new Class({
     },
     
     update: function(){
-        if (this.cardstack.length < this.options.stacksize){
-            this.cardRequest.send();
-        }
         if (this.currentCard === null){
             this.popCardStack();
         }
+        if (this.cardstack.length < this.options.stacksize){
+            this.cardRequest.send();
+        }
+        this.drawStack()
     },
     
     popCardStack: function(){
@@ -414,6 +416,17 @@ var StudyClient = new Class({
                         'description':'flip the current card',
                         'handler':this.flipCard.create({'event':true,'bind':this})
         });
+    },
+    
+    drawStack: function(){
+        if(!(this.options.stackview === null)){
+            var s = $(this.options.stackview);
+            s.empty();
+            ul = new Element('ul').inject(s);
+            this.cardstack.each(function(card, idx){
+                ul.adopt(new Element('li'));
+            }.bind(this));
+        }
     },
     
     flipCard: function(){

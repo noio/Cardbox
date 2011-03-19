@@ -7,9 +7,10 @@ from django.conf.urls.defaults import *
 urlpatterns = patterns('',
 
    (r"^$", "cardbox.views.frontpage"),
+   (r"^help$","cardbox.views.help"),
    (r"^(?P<kind>(list|template))/create$", "cardbox.views.page_create"),
    (r"^(?P<kind>(list|template))/(?P<name>[a-z]+:?[a-z0-9\_]+)/view$", "cardbox.views.page_view"),
-   (r"^(?P<kind>(list|template))/(?P<name>[a-z]+:?[a-z0-9\_]+)/edit$", "cardbox.views.page_edit"),
+   (r"^(?P<kind>(list|template|scheduler))/(?P<name>[a-z]+:?[a-z0-9\_]+)/edit$", "cardbox.views.page_edit"),
    (r"^(?P<kind>(list|template))/(?P<name>[a-z]+:?[a-z0-9\_]+)/preview$", "cardbox.views.page_preview"),
    (r"^(?P<kind>(list))/(?P<name>[a-z]+:?[a-z0-9\_]+)/json$","cardbox.views.page_json"),
    
@@ -26,8 +27,7 @@ urlpatterns = patterns('',
    (r"^box/([0-9]+)/update_card","cardbox.views.update_card"),
    
    (r"^box/(?P<box_id>[0-9]+)/card/(?P<card_id>[0-9]+\-[A-Za-z0-9\-\_\.]+)/view$","cardbox.views.card_view"),
-   
-   
+      
    (r"^(?P<kind>list|template|scheduler|cardset)/all/browse$","cardbox.views.browse"),
    (r"^(?P<kind>list|template|scheduler|cardset)/all/data$","cardbox.views.browse_data")
    

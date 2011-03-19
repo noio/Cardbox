@@ -3,14 +3,21 @@
 {% block content %}
     <div class="span-24"><h3>Studying from &laquo;{{box.title}}&raquo;</h3></div>
     <div class="span-24" id='study-area'>
-        <div class='card-container span-12'></div>
-        <div class='card-info prepend-1 span-6'></div>
+        <div class='span-12 append-1'>
+            <div class='card-container span-12 last'></div>
+            <div class='buttons span-12 last'></div>
+        </div>
+        
+        <div class='span-6'>
+            <div class='card-info span-6 last'></div>
+            <div id='stackview' class='cardstack span-6 last'></div>
+        </div>
+        
         <div class='box-info span-5 last'></div>
-        <div class='buttons span-12 append-12 last'>
     </div>
     <script type='text/javascript'>
         window.addEvent('domready',function(){
-            var studyClient = new StudyClient('study-area',{{box.key.id}});
+            var studyClient = new StudyClient('study-area',{{box.key.id}},{'stackview':$('stackview')});
         });
     </script>
 {% endblock %}

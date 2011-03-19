@@ -46,6 +46,9 @@
                         {% else %}<a href="{{ sign_out }}">logout</a>
                         {% endif %}
                     </li>
+                    <li>
+                        <a href="{% url cardbox.views.help %}">help</a>
+                    </li>
                 
                      {%if is_admin %}
                     

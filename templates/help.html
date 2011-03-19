@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class='span-24'>
+        <img style='margin: 40px 0;' src='{{media_url}}theme/help-screen.png'></img>
+    </div>
+    <div class='span-6'>
+        <h3 style='text-align:center;'>Lists</h3>
+        <hr/>
+        <p>Each List contains any number of related words. The most obvious example is a vocabulary from a chapter of a book. You'll only have to enter these words once, then you can re-use them any way you like.</p>
+        
+        <p>Words are entered in a simple format, like so:</p>
+        <pre>columns: [dutch, en, pos]
+rows:
+ - [fiets, bicycle, noun]
+ - [kaas, cheese, noun]</pre>
+        
+    </div>
+    <div class='span-6'>
+        <h3 style='text-align:center;'>Templates</h3>
+        <hr/>
+        <p>A Template defines the look of your card! Colors, fonts, sizes, position, all of those are set in a template. You don't have to worry about them too much though, just pick one.</p> 
+    </div>
+    <div class='span-6'>
+        <h3 style='text-align:center;'>Cardsets</h3>
+        <hr/>
+        <p>When you combine a list of words with a template, you get cards! When you create or edit a cardset, simply select a List and a Template, and decide which words should go where on the front and the back of the card.</p>
+    </div>
+    <div class='span-6 last'>
+        <h3 style='text-align:center;'>Boxes</h3>
+        <hr/>
+        <p>Your progress is kept in a Box. In each box, you can put any number of Cardsets and study those! When you start studying, the cards that you have memorized least well will be presented to you.</p>
+        
+        <p>You could have a separate box for each language you are learning or separate boxes for each semester, it's up to you.</p>
+    </div>
+{% endblock %}

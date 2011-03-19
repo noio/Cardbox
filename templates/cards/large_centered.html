@@ -1,0 +1,32 @@
+<div class="card">
+{% if not mobile %}
+
+    <div class='front'>
+    <h2 style="margin-bottom:2px;text-align:center;">{{front_above}}</h2>
+    <h1 style="font-size:60px;margin-bottom:10px;text-align:center;">{{front_center}}</h1>
+    <h2 style="text-align:center;">{{front_below}}</h2>
+    <p style="text-align:right;">({{front_note}})</p></div>	
+
+    <div class='back'>
+    <h2 style="margin-bottom:2px;text-align:center;">{{back_above}}</h2>
+    <h1 style="font-size:60px;margin-bottom:10px;text-align:center;">{{back_center}}</h1>
+    <h2 style="text-align:center;">{{back_below}}</h2>
+    <p style="text-align:right;">({{back_note}})</p></div>
+    
+{% else %}
+    
+    <div class='front'>
+    <h2 style="margin-bottom:2px;text-align:center;">{{front_above}}</h2>
+    <h1 style="font-size:60px;margin-bottom:10px;text-align:center;">{{front_center}}</h1>
+    <h2 style="text-align:center;">{{front_below}}</h2>
+    <p style="text-align:right;">({{front_note}})</p></div>	
+
+    <div class='back'>
+    <h2 style="margin-bottom:2px;text-align:center;">{{back_above}}</h2>
+    <h1 style="font-size:60px;margin-bottom:10px;text-align:center;">{{back_center}}</h1>
+    <h2 style="text-align:center;">{{back_below}}</h2>
+    <p style="text-align:right;">({{back_note}})</p></div>
+    
+{% endif %}
+
+</div>

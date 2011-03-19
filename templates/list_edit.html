@@ -21,15 +21,7 @@
         
         {% ifequal page.kind_name "list" %}{% if not page.is_saved %}
         <div class='help'>
-            <p>Create a list as follows. Start out with defining what columns you will enter. Below that, enter your list, each line starting with a space, a dash (-), and another space. 
-                For example, for a dutch list including part of speech, type:
-            <pre>columns: [dutch, english, pos]
-rows:
- - [fiets, bicycle, noun]
- - [fietsen, to cycle, verb]</pre>
-            If a word or sentence contains any special characters like comma's or colons, wrap it in quotes.
-            <pre> - [breed, "wide, large", adjective]</pre>
-            Just click "Save Changes" when you are done!
+            <p>
             </p>
         </div>
         {%endif%}{% endifequal %}
@@ -40,6 +32,7 @@ rows:
                 <pre>{{error.content}}</pre>
             </div>
         {% endfor %}
+        
         
         <textarea name='content' style="width:938px; height:500px; font-family:Monaco,Courier,monospace">{{page.source}}</textarea>
         <div class='button-bar standalone'><ul>

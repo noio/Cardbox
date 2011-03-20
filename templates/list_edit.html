@@ -2,7 +2,6 @@
 
 {% load cardbox_filters %}
 
-
 {% block content %}
     <div class="span-24">
         {% if list.is_saved %}
@@ -17,13 +16,13 @@
             <h3><span class='faded'>Creating a list named: </span></h3> <input class='title' name='title' type='text' value='{{page.title}}'>
         {% endif %}
             <div class='button-bar standalone'><ul>
-                {% if page.is_saved %}<li><a class='button-cancel' href='{% url cardbox.views.list_view name=page.name %}'><span class='icon'></span>Cancel</a></li>{%endif%}
-                <li><a class='button-save' href='#' onClick='$("page-edit-form").submit()'><span class='icon'></span>Save Changes</a></li>
+                {% if list.is_saved %}<li><a class='button-cancel' href='{% url cardbox.views.list_view name=list.name %}'><span class='icon'></span>Cancel</a></li>{%endif%}
+                <li><a class='button-save' href='#' onClick='$("list-edit-form").submit()'><span class='icon'></span>Save Changes</a></li>
             </ul></div>
         </div>
-        </form>
-        <form>
-        <table id='list-editor' class='list-view'>
+   
+        <table class='list-view'>
+            {% for k in list.columns %}<col/>{% endfor %}
             <thead>
                 <tr>
                     {% for k in list.columns %}
@@ -34,7 +33,7 @@
             <tbody>
             {% for row_id in list.row_order %}
             {% with list.rows|dictkey:row_id as row %}
-            <tr class='{% cycle "table-tr-odd" " "%}'>
+            <tr>
                 {% for c in list.columns %}
                 <td>{{row|dictkey:c}}</td>
                 {% endfor %}
@@ -43,9 +42,30 @@
             {% endfor %}
             </tbody>
         </table>
+        
+        
+        <div class='span-24'>
+            {% for cardset in list.cardset_set %}
+            <div class='cardset-editor'>
+                <input type='text' name='title' value='{{cardset.title}}'>
+                <input type='text' name='template' value='{{cardset.template}}'>
+                <input type='hidden' name='cardset-id' value='{{cardset.key.id}}'>
+                <input type='hidden' name='cardset-mapping' value='{{cardset.mapping_json}}'>
+                <input type='hidden' name='cardset-id' value='{{cardset.key.id}}'>
+                <div class='splitview'>{{cardset.sample}}</div>
+            <div>
+            {% endfor %}
+            
+            <input type='hidden' name='cardset-id' value='4'>
+            <input type='hidden' name='cardset-id' value='5'>
+            <input type='hidden' name='cardset-id' value='6'>
+            
+        <div>
+            
         <script type='text/javascript'>
-            window.listEditor = new ListEditor('list-editor');
+            window.listEditor = new ListEditor('list-edit-form');
         </script>
+        
         </form>
     </div>
 {% endblock %}

@@ -21,6 +21,8 @@ urlpatterns = patterns('',
    (r"^box/([0-9]+)/next_card$","cardbox.views.next_card"),
    (r"^box/([0-9]+)/update_card","cardbox.views.update_card"),
    
-   (r"^box/(?P<box_id>[0-9]+)/card/(?P<card_id>[0-9]+\-[A-Za-z0-9\-\_\.]+)/view$","cardbox.views.card_view")
+   (r"^box/(?P<box_id>[0-9]+)/card/(?P<card_id>[0-9]+\-[A-Za-z0-9\-\_\.]+)/view$","cardbox.views.card_view"),
+   
+   (r"^template/([a-z0-9\_]+)/view/ajax","cardbox.views.template_view_ajax"),
    
 )

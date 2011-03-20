@@ -186,7 +186,7 @@ var MappingSelector = new Class({
      */
     fieldChanged: function(field){
         var selectedValue = field.get('html');
-        var sameFields = $$('.tfield[id='+field.get('id')+']');
+        var sameFields    = $$('.tfield[id='+field.get('id')+']');
         sameFields.set('html',selectedValue);
         this.dump();
     }
@@ -200,11 +200,40 @@ var ListEditor = new Class({
 
     initialize: function(table,options){
         this.table = document.id(table);
+        if (!this.table.get('tag') == 'table'){
+            this.table = this.table.getElement('table');
+        }
         this.setOptions(options);
         this.checkEmpty();
         this.wrapCells();
-        this.setFieldNames();
         this.checkExpansion();
+        this.update();
+    },
+    
+    getColumnNames: function(){
+        return this.table.getElements('th input').get('value');
+    },
+    
+    getRows: function(){
+        rows = [];
+        columns = this.getColumnNames();
+        this.table.getElements('tbody tr').each(function(tr){
+            var row = tr.getElements('td input').get('value');
+            rows.push(row.associate(columns));
+        });
+        return rows;
+    },
+    
+    update: function(){
+        this.wrapCells();
+        this.setFieldNames();
+        this.addButtons();
+    },
+    
+    newRow: function(){
+        var tr = Element('tr');
+        var tds = this.table.getElements('th').map(function(th){return Element('td')},this);
+        return tr.adopt(tds);
     },
     
     wrapCells: function(){
@@ -212,8 +241,45 @@ var ListEditor = new Class({
         cells.each(function(cell){
             if (!cell.getElement('input')){
                 var value = cell.get('html');
-                cell.set('html','<input type="text" value="'+value+'">');
+                var input = Element('input',{type:'text', value:value})
+                input.addEvent('change',this.checkExpansion.bind(this));
+                cell.empty();
+                cell.adopt(input);
             }
+        },this);
+    },
+    
+    addButtons: function(){
+        var rows = this.table.getElements('tbody tr').slice(0,-1);
+        rows = rows.filter(function(r){
+            return !r.getElement('.button')
+        });
+        rows.each(function(row,i){
+            var first = row.getElement('td:first-child');
+            var last  = row.getElement('td:last-child');
+            var removeButton = Element('a',{
+                'html':'remove', 'href':'#', 'class':'button action-remove',
+                'events':{
+                    'click':function(event){
+                        event.preventDefault();
+                        new Fx.Tween(row, {'property':'opacity'}).start(1,0).chain(
+                            row.destroy.bind(row)
+                        );
+                    }
+                }
+            });
+            var addButton = Element('a',{
+                'html':'add', 'href':'#', 'class':'button action-add',
+                'events':{
+                    'click':function(event){
+                        event.preventDefault();
+                        this.newRow().inject(row,'before').fade('hide').fade('in');
+                        this.update();
+                    }.bind(this)
+                }
+            });
+            first.grab(removeButton,'top');
+            last.grab(addButton,'bottom');
         },this);
     },
     
@@ -237,10 +303,8 @@ var ListEditor = new Class({
         if (cells.length == 0){
             var headerRow = Element('tr').adopt([Element('th'),Element('th')]);
             this.table.getElement('thead').adopt(headerRow);
-            for(var i=0; i<3; i++){
-                var row = Element('tr').adopt([Element('td'),Element('td')]);
-                this.table.getElement('tbody').adopt(row);
-            }
+            this.table.getElement('tbody').adopt(this.newRow());
+            this.table.getElement('tbody').adopt(this.newRow());
         }
     },
     
@@ -250,11 +314,8 @@ var ListEditor = new Class({
             return td.getElement('input').getProperty('value');
         });
         if (lastRowUsed) {
-            var newRow = Element('tr');
-            newRow.adopt(lastRow.map(function(i){return new Element('td');}));
-            this.table.getElement('tbody').adopt(newRow);
-            this.wrapCells();
-            this.setFieldNames();
+            this.newRow().inject(this.table.getElement('tbody')).fade('hide').fade('in');
+            this.update();
         }
     }
 })

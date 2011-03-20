@@ -297,22 +297,25 @@ class Cardset(db.Model):
     factsheet = db.ReferenceProperty(Factsheet)
     template = db.ReferenceProperty(Template)
     mapping = db.TextProperty(default='')
-    
-    @property
-    def url(self):
-        """ Returns the view url for this cardset. 
-        """
-        return reverse('cardbox.views.cardset_view',args=[self.key().id()])
         
-    def random_card(self):
+    def sample(self):
         """ Renders a random card from connected factsheet. Renders a 'None'
             card if factsheet not found or is empty.
         """
         if self.factsheet is not None:
-            ids = list(self.factsheet.row_ids())
-            if len(ids) > 0:
-                return self.render_card(random.choice(ids))
-        return self.render_card(None)
+            ids = self.factsheet.row_ids()
+            if ids:
+                row           = self.factsheet.rows()[random.choice(ids)]
+                template_name = self.template.key().name().split(':')[1]
+                mapping       = yaml.load(self.mapping)
+                return CardTemplate(template_name, mapping).render(row)
+                
+    def template_preview(self):
+        """ Renders a preview of this set's template """
+        
+                
+    def mapping_json(self):
+        return simplejson.dumps(yaml.load(self.mapping))
         
     def all_ids(self):
         if self.factsheet is not None and not self.factsheet.errors():
@@ -320,9 +323,6 @@ class Cardset(db.Model):
             return [(k, c_id) for c_id in self.factsheet.row_ids()]
         else:
             return []
-        
-    def mapping_as_json(self):
-        return simplejson.dumps(yaml.load(self.mapping))
 
 class Box(db.Model):
     study_set_size = 10
@@ -527,7 +527,7 @@ class Card(db.Model):
         times, a, b, intervals, learned_until = zip(*history)
         chart.add_line(times, intervals, 'Interval')
         return {'interval':chart}
-        
+         
     def render(self):
         # Fetch vars
         factsheet     = self.get_cardset().factsheet
@@ -535,41 +535,15 @@ class Card(db.Model):
         template_name = self.get_cardset().template.key().name().split(':')[1]
         row_id        = self.key().name().split('-',1)[1]
         row           = factsheet.rows().get(row_id,None)
-        try:
-            template_string = open('templates/cards/'+template_name+'.html').read()
-        except IOError:
-            return self.render_error("Template '%s' not found."%(template_name,))
-        template = django_template.Template(template_string)
         if factsheet is None:
-            return self.render_error("Factsheet not found or empty.")
+            return CardTemplate.render_error("Factsheet not found or empty.")
         if factsheet.errors():
-            return self.render_error("Factsheet contains errors.")
+            return CardTemplate.render_error("Factsheet contains errors.")
         if row is None:
-            return self.render_error("Card not found in factsheet.")
+            return CardTemplate.render_error("Card not found in factsheet.")
         # Actual rendering
-        front_vars = set(RE_DJANGO_VARIABLE_TAG.findall(RE_CARD_FRONT.findall(template_string)[0]))
-        back_vars  = set(RE_DJANGO_VARIABLE_TAG.findall(RE_CARD_BACK.findall(template_string)[0]))
-        variables  = front_vars | back_vars
-        base       = dict((v,EMPTY_FIELD) for v in variables)
-        base.update(row)
-        base.update(((newkey, base[oldkey]) for (newkey, oldkey) in mapping.items()))
-        # Extract the base values first, without wrapping or templating
-        front_data = filter(lambda x: x != EMPTY_FIELD,(mark_safe(base[d]) for d in front_vars))
-        back_data = filter(lambda x: x != EMPTY_FIELD,(mark_safe(base[d]) for d in back_vars))
-        back_data = filter(lambda x: x not in front_data, back_data)
-        # Wrap all fields in a span with their ID
-        for k in base.keys():
-            base[k] = mark_safe('<span class="tfield" id="tfield_%s">%s</span>'%(k,encode_html(base[k])))
-        # Apply the template
-        return template.render(Context(base))
-        
-    def rendered(self):
-        if not hasattr(self, '_rendered') or self._rendered is None:
-            self._rendered = self.render()
-        return self._rendered
-        
-    def render_error(self, message):
-        return render_to_string('cards/error.html',{'message':message})
+        template = CardTemplate(template_name, mapping)
+        return template.render(row)
         
         
 class DailyBoxStats(db.Model):
@@ -583,6 +557,65 @@ class DailyBoxStats(db.Model):
 
 
 ### Non-model Classes ###
+
+class CardTemplate(object):
+    """ Contains methods for loading and rendering cardtemplates,
+        and extracting variables
+    """
+    def __init__(self, template_name=None, mapping=None):
+        self.mapping = {}
+        self.front_vars = []
+        self.back_vars = []
+        if template_name is not None:
+            self.load(template_name)
+        if mapping is not None:
+            self.set_mapping(mapping)
+    
+    def load(self,template_name):
+        try:
+            self.template_string = open('templates/cards/'+template_name+'.html').read()
+            self.template        = django_template.Template(self.template_string)
+            self.front_fields    = set(RE_DJANGO_VARIABLE_TAG.findall(RE_CARD_FRONT.findall(self.template_string)[0]))
+            self.back_fields     = set(RE_DJANGO_VARIABLE_TAG.findall(RE_CARD_BACK.findall(self.template_string)[0]))
+            self.fields          = self.front_fields | self.back_fields
+            self.front_fields    = sorted(self.front_fields,key=lambda v: v[-1])
+            self.back_fields     = sorted(self.back_fields,key=lambda v: v[-1])
+            self.error           = False
+        except IOError:
+            self.error           = "Template not found."
+            self.template_string = None
+    
+    def set_mapping(self,mapping):
+        self.mapping    = mapping
+        self.front_vars = [mapping[f] for f in self.front_fields if f in mapping]
+        self.back_vars  = [mapping[f] for f in self.back_fields if f in mapping]
+        self.back_vars  = [v for v in self.back_vars if v not in self.front_vars]
+        
+    def set_content(self, row):
+        self.front_data = [row[v] for v in self.front_vars if v in row]
+        self.back_data  = [row[v] for v in self.back_vars if v in row]
+        self.back_data  = [b for b in self.back_data if b not in self.front_data]
+            
+    def render(self,row):
+        if self.error:
+            return self.render_error(self.error)
+        self.set_content(row)
+        base = dict((v,EMPTY_FIELD) for v in self.fields)
+        base.update(row) # This allows fields to be filled by their original name.
+        # Update the values of the dict with the row's values.
+        base.update(((field, row[var]) for (field, var) in self.mapping.items() if var in row))
+        # Wrap all fields in a span with their ID
+        for k in base.keys():
+            base[k] = mark_safe('<span class="tfield" id="tfield_%s">%s</span>'%(k,encode_html(base[k])))
+        # Apply the template
+        return self.template.render(Context(base))
+        
+    def render_fields(self):
+        return self.render(dict(((f,f) for f in self.fields)))
+        
+    @classmethod
+    def render_error(cls, message):
+        return render_to_string('cards/error.html',{'message':message})
         
 class TimelineChart(object):
     

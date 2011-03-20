@@ -83,6 +83,8 @@ def list_view(request, name):
     
 @login_required
 def list_edit(request, name):
+    if request.method == 'POST':
+        return HttpResponse(str(request.POST))
     factsheet = models.Factsheet.get_by_name(name)
     return respond(request, 'list_edit.html',{'list':factsheet})
     
@@ -152,6 +154,9 @@ def card_view(request, box_id, card_id):
     box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
     card = models.Card.get_by_key_name(card_id, parent=box)
     return respond(request, 'card_view.html', {'card':card})
+    
+def template_view_ajax(request, template_name):
+    return HttpResponse(models.CardTemplate(template_name).render_fields())
 
 def maintenance(request):
     return HttpResponse("Doing some maintenance, we'll be back really soon.")

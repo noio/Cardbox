@@ -14,6 +14,7 @@
         <hr class='space'/>
 
         <table class='list-view'>
+            {% for k in list.columns %}<col/>{% endfor %}
             <thead>
                 <tr>
                     {% for k in list.columns %}
@@ -24,7 +25,7 @@
             <tbody>
             {% for row_id in list.row_order %}
             {% with list.rows|dictkey:row_id as row %}
-            <tr class='{% cycle "table-tr-odd" " "%}'>
+            <tr>
                 {% for c in list.columns %}
                 <td>{{row|dictkey:c}}</td>
                 {% endfor %}
@@ -33,7 +34,10 @@
             {% endfor %}
             </tbody>
         </table>
-    </div>
-    <div class="span-24 last">
-    </div>
+    </div>   
+    <div id='cardsets' class='span-24'>
+        {% for cardset in list.cardset_set %}
+            <div class='splitview'>{{cardset.sample}}</div>
+        {% endfor %}
+    <div>
 {% endblock %}

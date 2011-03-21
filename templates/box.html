@@ -41,28 +41,7 @@
                 <div id='browser_available'>
             </div>
             </div>
-            <script>
-                modalBox = new ModalBox('browser-modal-box');
-                selectedBrowser = new BrowseTable('browser_selected',{
-                    {%if box.is_saved%}'filters':{'ids':'{{box.cardsets|join:","}}' },{%endif%}
-                    'kind':'cardset',
-                    'actions':['remove']
-                });
-                selectedBrowser.addEvent('action_remove',function(id){
-                    selectedBrowser.removeRow(id);
-                    $('id_cardsets').set('value',selectedBrowser.getRowIds().join(','));
-                });
-                {%if box.is_saved %}selectedBrowser.refresh();{% endif %}
-                availableBrowser=new BrowseTable('browser_available',{
-                    'kind':'cardset',
-                    'actions':['add']
-                });
-                availableBrowser.addEvent('action_add',function(id){
-                    selectedBrowser.addRow(availableBrowser.getRowData(id));
-                    $('id_cardsets').set('value',selectedBrowser.getRowIds().join(','));
-                });
-                availableBrowser.update();
-            </script>
+          
             
             <hr class='space'>
             

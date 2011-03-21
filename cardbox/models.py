@@ -606,7 +606,7 @@ class CardTemplate(object):
         base.update(((field, row[var]) for (field, var) in self.mapping.items() if var in row))
         # Wrap all fields in a span with their ID
         for k in base.keys():
-            base[k] = mark_safe('<span class="tfield" id="tfield_%s">%s</span>'%(k,encode_html(base[k])))
+            base[k] = mark_safe('<span class="tfield tfield_%s" id="tfield_%s">%s</span>'%(k,k,encode_html(base[k])))
         # Apply the template
         return self.template.render(Context(base))
         

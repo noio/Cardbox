@@ -47,23 +47,25 @@
         <div class='span-24'>
             {% for cardset in list.cardset_set %}
             <div class='cardset-editor'>
-                <input type='text' name='title' value='{{cardset.title}}'>
-                <input type='text' name='template' value='{{cardset.template}}'>
+                <input type='text' name='cardset-title' value='{{cardset.title}}'>
+                <input type='text' name='cardset-template' value='{{cardset.template}}'>
                 <input type='hidden' name='cardset-id' value='{{cardset.key.id}}'>
                 <input type='hidden' name='cardset-mapping' value='{{cardset.mapping_json}}'>
-                <input type='hidden' name='cardset-id' value='{{cardset.key.id}}'>
-                <div class='splitview'>{{cardset.sample}}</div>
+                <div class='card-container splitview'>{{cardset.sample}}</div>
             <div>
             {% endfor %}
-            
-            <input type='hidden' name='cardset-id' value='4'>
-            <input type='hidden' name='cardset-id' value='5'>
-            <input type='hidden' name='cardset-id' value='6'>
-            
+            <a id='button-addset' href='#'>Add a new set</a>
         <div>
             
-        <script type='text/javascript'>
+        <script type='text/javascript'> 
             window.listEditor = new ListEditor('list-edit-form');
+            window.cardsetEditors = $$('.cardset-editor').map(function(e){
+                return new CardsetEditor(e,window.listEditor);
+            });
+            document.id('button-addset').addEvent('click',function(e){
+                e.preventDefault();
+                
+            });
         </script>
         
         </form>

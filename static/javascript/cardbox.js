@@ -1,5 +1,220 @@
 /** CLASSES **/
 
+
+/** Table for editing list values. Automatically expands
+    when all rows have been used.
+ **/
+var ListEditor = new Class({
+    Implements: [Options],
+    options:{
+        fieldNamePrefix:'list'
+    },
+
+    initialize: function(table,options){
+        this.table = document.id(table);
+        if (!this.table.get('tag') == 'table'){
+            this.table = this.table.getElement('table');
+        }
+        this.setOptions(options);
+        this.checkEmpty();
+        this.wrapCells();
+        this.checkExpansion();
+        this.update();
+    },
+    
+    getColumnNames: function(){
+        return this.table.getElements('th input').get('value');
+    },
+    
+    getRows: function(){
+        rows = [];
+        columns = this.getColumnNames();
+        this.table.getElements('tbody tr').each(function(tr){
+            var row = tr.getElements('td input').get('value');
+            rows.push(row.associate(columns));
+        });
+        return rows;
+    },
+    
+    update: function(){
+        this.wrapCells();
+        this.setFieldNames();
+        this.addButtons();
+    },
+    
+    newRow: function(){
+        var tr = new Element('tr');
+        var tds = this.table.getElements('th').map(function(th){return new Element('td')},this);
+        return tr.adopt(tds);
+    },
+    
+    wrapCells: function(){
+        var cells = this.table.getElements('th,td');
+        cells.each(function(cell){
+            if (!cell.getElement('input')){
+                var value = cell.get('html');
+                var input = new Element('input',{type:'text', value:value})
+                input.addEvent('change',this.checkExpansion.bind(this));
+                cell.empty();
+                cell.adopt(input);
+            }
+        },this);
+    },
+    
+    addButtons: function(){
+        var rows = this.table.getElements('tbody tr').slice(0,-1);
+        rows = rows.filter(function(r){
+            return !r.getElement('.button')
+        });
+        rows.each(function(row,i){
+            var first = row.getElement('td:first-child');
+            var last  = row.getElement('td:last-child');
+            var removeButton = Element('a',{
+                'html':'remove', 'href':'#', 'class':'button action-remove',
+                'events':{
+                    'click':function(event){
+                        event.preventDefault();
+                        new Fx.Tween(row, {'property':'opacity'}).start(1,0).chain(
+                            row.destroy.bind(row)
+                        );
+                    }
+                }
+            });
+            var addButton = new Element('a',{
+                'html':'add', 'href':'#', 'class':'button action-add',
+                'events':{
+                    'click':function(event){
+                        event.preventDefault();
+                        this.newRow().inject(row,'before').fade('hide').fade('in');
+                        this.update();
+                    }.bind(this)
+                }
+            });
+            first.grab(removeButton,'top');
+            last.grab(addButton,'bottom');
+        },this);
+    },
+    
+    setFieldNames: function(){
+        var headers = this.table.getElements('th');
+        var prefix  = this.options.fieldNamePrefix
+        headers.each(function(header, i){
+            header.getElement('input').setProperty('name', prefix+'-header-'+i)
+        },this);
+        var rows = this.table.getElements('tbody tr');
+        rows.each(function(row, i){
+            var cells = row.getElements('td');
+            cells.each(function(cell, j){
+                cell.getElement('input').setProperty('name', prefix+'-row-'+i+'-col-'+j);
+            },this);
+        },this);
+    },
+    
+    checkEmpty: function(){
+        var cells = this.table.getElements('th,td');
+        if (cells.length == 0){
+            var headerRow = new Element('tr').adopt([new Element('th'),new Element('th')]);
+            this.table.getElement('thead').adopt(headerRow);
+            this.table.getElement('tbody').adopt(this.newRow());
+            this.table.getElement('tbody').adopt(this.newRow());
+        }
+    },
+    
+    checkExpansion: function(){
+        var lastRow = this.table.getElements('tr').getLast().getElements('td')
+        var lastRowUsed = lastRow.some(function(td){
+            return td.getElement('input').getProperty('value');
+        });
+        if (lastRowUsed) {
+            this.newRow().inject(this.table.getElement('tbody')).fade('hide').fade('in');
+            this.update();
+        }
+    }
+})
+
+/**
+ * CardsetEditor allows users to select a mapping and edit 
+ * the autosuggested name for the set.
+ */
+var CardsetEditor = new Class({
+  
+    initialize: function(element, listEditor){
+        this.element = document.id(element);
+        this.listEditor = listEditor;
+        // Add element for the draggers, render contents dynamically later.
+        new Element('div.draggers').inject(this.element.getElement('.card-container'),'before')
+        // Decode the mapping
+        this.mapping = JSON.decode(this.element.getElement('input[name=cardset-mapping]').get('value'));
+        this.samplerow = this.listEditor.getRows().getRandom();
+        this.render();
+    },
+    
+    
+    render: function(){
+        // Update the draggers
+        var draggers = this.element.getElement('.draggers').empty()
+        for (var v in this.samplerow){
+            var dragger = new Element('div',{'html':this.samplerow[v]}).inject(draggers);
+            dragger.grab(new Element('span.mapping',{'html':v}),'top')
+        }
+        // Update the card fields
+        var fields = this.element.getElements('.card-container .tfield')
+        fields.each(function(field){
+            var fieldname  = this.getFieldName(field);
+            field.empty();
+            if (fieldname in this.mapping && this.mapping[fieldname] in this.samplerow){
+                field.set('html',this.samplerow[this.mapping[fieldname]])
+                field.grab(new Element('span.mapping',{'html':this.mapping[fieldname]}),'top')
+            }
+        },this);
+        // Enable the draggers
+        var editor = this;
+        this.element.getElements('.draggers div').addEvent('mousedown',function(event){
+            event.stop();
+            var dragger = this;
+            var clone = dragger.clone().setStyles(dragger.getCoordinates()).setStyles({
+                'position': 'absolute'
+            }).inject(document.body);
+            
+            var drag = new Drag.Move(clone, {
+                'droppables': fields,
+                
+                onDrop: function(dragging, field){
+                    dragging.destroy();
+                    if (field != null){
+                        editor.setMapping([editor.getFieldName(field)],dragging.getElement('.mapping').get('html'));
+                        editor.render();
+                    }
+                },
+                onEnter: function(dragging, field){
+                    field.tween('background-color', '#98B5C1');
+                },
+                onLeave: function(dragging, field){
+                    field.tween('background-color', '#FFF');
+                },
+                onCancel: function(dragging){
+                    dragging.destroy();
+                }
+            });
+            drag.start(event);
+        });
+    },
+    
+    getFieldName: function(field){
+        return field.getProperty('class')
+            .split(' ').filter(function(f){
+                return f.contains('tfield_')
+            })[0].split('_')[1];
+    },
+    
+    setMapping: function(fieldName, varName){
+        this.mapping[fieldName] = varName;
+        this.element.getElement('input[name=cardset-mapping]').set('value',JSON.encode(this.mapping))
+    }
+    
+});
+
+
 /**
  * Ribbon is an expanding navigation menu, using hierarchical 
  * horizontal bars.
@@ -104,221 +319,6 @@ var Ribbon = new Class({
     }
 })
 
-
-
-/**
- * A mappingselector allows the user to select which
- * values of the factsheet go in which fields on the template
- */
-var MappingSelector = new Class({
-    initialize: function(id, field){
-        this.element = $(id);
-        this.element.addClass('mapper');
-        this.outputField = $(field);
-        this.mapping = JSON.decode(this.outputField.get('value'));
-        if (this.mapping === null) {this.mapping = {};}
-    },
-
-    setFactsheet: function(list_id){
-        var rq = new Request.JSON({
-            'onComplete':function(json, text){
-                this.setValues(json.columns);
-                this.redraw();
-            }.bind(this)
-        }).get('/list/'+list_id+'/json');
-    },
-    
-    setTemplate: function(template_id){
-        var rq = new Request.HTML({
-            'update':this.element,
-            'onComplete':function(t,e,h,j){
-                this.redraw();
-            }.bind(this)
-        }).get('/template/'+template_id+'/preview');
-    },
-    
-    setValues: function(values){
-        this.values = ['None'].combine(values.erase(''));
-        // Remove mapping entries that don't occur in values.
-        for (field_id in this.mapping){
-            if (!this.values.contains(this.mapping[field_id])){
-                delete this.mapping[field_id];
-            }
-        }
-        this.redraw();
-    },
-    
-    dump: function(){
-        var fields = this.element.getElements('.tfield');
-        var output = {};
-        fields.each(function(item,index){
-            output[item.get('id').replace('tfield_','')] = item.get('html');
-        });
-        this.mapping = output;
-        this.outputField.set('value', JSON.encode(output));
-    },
-    
-    redraw: function(){
-        this.element.getElements('.tfield').each(function(elem,index){
-            field_id = elem.get('id').replace('tfield_','');
-            elem.empty();
-            elem.set('html','None');
-            if (field_id in this.mapping){
-                elem.set('html',this.mapping[field_id]);
-            }
-            elem.addEvent('click',function(e){
-                var current = this.values.indexOf(elem.get('html'));
-                var next = (current+1) % this.values.length;
-                var nextVal = this.values[next];
-                elem.set('html',nextVal);
-                this.fieldChanged(elem);
-            }.bind(this));
-            elem.addEvents({
-                'mouseover':function(e){$(e.target).addClass('hovered');},
-                'mouseout':function(e){$(e.target).removeClass('hovered');}
-            })
-        },this);
-    },
-    
-    /**
-     * Changes all fields with the same name, so that same value is selected
-     * across all identical fields.
-     */
-    fieldChanged: function(field){
-        var selectedValue = field.get('html');
-        var sameFields    = $$('.tfield[id='+field.get('id')+']');
-        sameFields.set('html',selectedValue);
-        this.dump();
-    }
-});
-
-var ListEditor = new Class({
-    Implements: [Options],
-    options:{
-        fieldNamePrefix:'list'
-    },
-
-    initialize: function(table,options){
-        this.table = document.id(table);
-        if (!this.table.get('tag') == 'table'){
-            this.table = this.table.getElement('table');
-        }
-        this.setOptions(options);
-        this.checkEmpty();
-        this.wrapCells();
-        this.checkExpansion();
-        this.update();
-    },
-    
-    getColumnNames: function(){
-        return this.table.getElements('th input').get('value');
-    },
-    
-    getRows: function(){
-        rows = [];
-        columns = this.getColumnNames();
-        this.table.getElements('tbody tr').each(function(tr){
-            var row = tr.getElements('td input').get('value');
-            rows.push(row.associate(columns));
-        });
-        return rows;
-    },
-    
-    update: function(){
-        this.wrapCells();
-        this.setFieldNames();
-        this.addButtons();
-    },
-    
-    newRow: function(){
-        var tr = Element('tr');
-        var tds = this.table.getElements('th').map(function(th){return Element('td')},this);
-        return tr.adopt(tds);
-    },
-    
-    wrapCells: function(){
-        var cells = this.table.getElements('th,td');
-        cells.each(function(cell){
-            if (!cell.getElement('input')){
-                var value = cell.get('html');
-                var input = Element('input',{type:'text', value:value})
-                input.addEvent('change',this.checkExpansion.bind(this));
-                cell.empty();
-                cell.adopt(input);
-            }
-        },this);
-    },
-    
-    addButtons: function(){
-        var rows = this.table.getElements('tbody tr').slice(0,-1);
-        rows = rows.filter(function(r){
-            return !r.getElement('.button')
-        });
-        rows.each(function(row,i){
-            var first = row.getElement('td:first-child');
-            var last  = row.getElement('td:last-child');
-            var removeButton = Element('a',{
-                'html':'remove', 'href':'#', 'class':'button action-remove',
-                'events':{
-                    'click':function(event){
-                        event.preventDefault();
-                        new Fx.Tween(row, {'property':'opacity'}).start(1,0).chain(
-                            row.destroy.bind(row)
-                        );
-                    }
-                }
-            });
-            var addButton = Element('a',{
-                'html':'add', 'href':'#', 'class':'button action-add',
-                'events':{
-                    'click':function(event){
-                        event.preventDefault();
-                        this.newRow().inject(row,'before').fade('hide').fade('in');
-                        this.update();
-                    }.bind(this)
-                }
-            });
-            first.grab(removeButton,'top');
-            last.grab(addButton,'bottom');
-        },this);
-    },
-    
-    setFieldNames: function(){
-        var headers = this.table.getElements('th');
-        var prefix  = this.options.fieldNamePrefix
-        headers.each(function(header, i){
-            header.getElement('input').setProperty('name', prefix+'-header-'+i)
-        },this);
-        var rows = this.table.getElements('tbody tr');
-        rows.each(function(row, i){
-            var cells = row.getElements('td');
-            cells.each(function(cell, j){
-                cell.getElement('input').setProperty('name', prefix+'-row-'+i+'-col-'+j);
-            },this);
-        },this);
-    },
-    
-    checkEmpty: function(){
-        var cells = this.table.getElements('th,td');
-        if (cells.length == 0){
-            var headerRow = Element('tr').adopt([Element('th'),Element('th')]);
-            this.table.getElement('thead').adopt(headerRow);
-            this.table.getElement('tbody').adopt(this.newRow());
-            this.table.getElement('tbody').adopt(this.newRow());
-        }
-    },
-    
-    checkExpansion: function(){
-        var lastRow = this.table.getElements('tr').getLast().getElements('td')
-        var lastRowUsed = lastRow.some(function(td){
-            return td.getElement('input').getProperty('value');
-        });
-        if (lastRowUsed) {
-            this.newRow().inject(this.table.getElement('tbody')).fade('hide').fade('in');
-            this.update();
-        }
-    }
-})
 
 
 var StudyClient = new Class({
@@ -451,38 +451,7 @@ var StudyClient = new Class({
     }
 });
 
-var ModalBox = new Class({
-    Implements: [Options],
-    options:{
-        title: ''
-    },
-    
-    initialize: function(id, options){
-        this.setOptions(options);
-        this.element = $(id);
-        //this.element.addClass('content');
-        this.modal = new Element('div',{'class':'modal'})
-        var inner = new Element('div',{'class':'inner'});
-        inner.wraps(this.element);
-        this.modal.wraps(inner);
-        inner.addEvent('click',function(e){
-            e.stopPropagation();
-        });
-        this.modal.addEvent('click',function(e){
-            e.stop();
-            this.modal.fade('out');
-        }.bind(this));
-        this.modal.fade('hide');
-    },
-    
-    show: function(){
-        this.modal.fade('in');
-    },
-    
-    hide: function(){
-        this.modal.fade('out');
-    }
-})
+
 
 var KeyBinder = new new Class({
     initialize: function(){

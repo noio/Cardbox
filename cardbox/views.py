@@ -83,9 +83,23 @@ def list_view(request, name):
     
 @login_required
 def list_edit(request, name):
-    if request.method == 'POST':
-        return HttpResponse(str(request.POST))
+    LIST_HEADER_FORMAT = 'list-header-%d'
+    LIST_CELL_FORMAT   = 'list-row-%d-col-%d'
     factsheet = models.Factsheet.get_by_name(name)
+    if request.method == 'POST':
+        # Extract columns
+        columns = [request.POST[LIST_HEADER_FORMAT%v] for v in range(10) if LIST_HEADER_FORMAT%v in request.POST]
+        # Extract rows
+        i, rows = 0, []
+        while LIST_CELL_FORMAT%(i,0) in request.POST:
+            rows.append([request.POST[LIST_CELL_FORMAT%(i,j)] for j in xrange(len(columns))])
+            i += 1
+        # Extract meta
+        meta_book    = request.POST['list-meta-book'];
+        meta_subject = request.POST['list-meta-subject'];
+        return HttpResponse(yaml.safe_dump({
+            'columns':columns, 
+            'rows':rows}))
     return respond(request, 'list_edit.html',{'list':factsheet})
     
 @login_required

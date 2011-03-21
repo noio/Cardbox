@@ -21,6 +21,8 @@
             </ul></div>
         </div>
    
+        <input type='text' name='list-meta-book' value='{{list.meta_book|default_if_none:""}}'>
+        <input type='text' name='list-meta-subject' value='{{list.meta_subject|default_if_none:""}}'>
         <table class='list-view'>
             {% for k in list.columns %}<col/>{% endfor %}
             <thead>
@@ -48,14 +50,14 @@
             {% for cardset in list.cardset_set %}
             <div class='cardset-editor'>
                 <input type='text' name='cardset-title' value='{{cardset.title}}'>
-                <input type='text' name='cardset-template' value='{{cardset.template}}'>
+                <input type='text' name='cardset-template' value='{{cardset.get_template_name}}'>
                 <input type='hidden' name='cardset-id' value='{{cardset.key.id}}'>
                 <input type='hidden' name='cardset-mapping' value='{{cardset.mapping_json}}'>
                 <div class='card-container splitview'>{{cardset.sample}}</div>
-            <div>
+            </div>
             {% endfor %}
             <a id='button-addset' href='#'>Add a new set</a>
-        <div>
+        </div>
             
         <script type='text/javascript'> 
             window.listEditor = new ListEditor('list-edit-form');
@@ -64,10 +66,21 @@
             });
             document.id('button-addset').addEvent('click',function(e){
                 e.preventDefault();
-                
+                window.cardsetEditors.push(new CardsetEditor(
+                    $('new-cardset-editor').clone().inject($('new-cardset-editor'),'before').setStyle('display',''),
+                    window.listEditor
+                ));
             });
         </script>
         
         </form>
+        {# New (prototype) cardset editor #}
+        <div id='new-cardset-editor' style='display:none'>
+            <input type='text' name='cardset-title' value='new'>
+            <input type='text' name='cardset-template' value='default'>
+            <input type='hidden' name='cardset-id' value='_new'>
+            <input type='hidden' name='cardset-mapping' value='{}'>
+            <div class='card-container splitview'></div>
+        </div>
     </div>
 {% endblock %}

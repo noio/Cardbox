@@ -57,15 +57,14 @@ class TimeDeltaProperty(db.Property):
 ### Models ###
 
 class Account(db.Model):
-    user_id = db.StringProperty(required=True)
-    google_user = db.UserProperty(auto_current_user_add=True)
-    created = db.DateTimeProperty(required=True, auto_now_add=True)
-    modified = db.DateTimeProperty(required=True, auto_now=True)
-    editor = db.UserProperty(required=True, auto_current_user=True)
-    nickname = db.StringProperty(required=True)
+    user_id       = db.StringProperty(required=True)
+    google_user   = db.UserProperty(auto_current_user_add=True)
+    created       = db.DateTimeProperty(required=True, auto_now_add=True)
+    modified      = db.DateTimeProperty(required=True, auto_now=True)
+    editor        = db.UserProperty(required=True, auto_current_user=True)
+    nickname      = db.StringProperty(required=True)
     year_of_birth = db.IntegerProperty()
-    
-    has_studied = db.BooleanProperty(default=False)
+    has_studied   = db.BooleanProperty(default=False)
     
     # Current user's Account.  Updated by middleware.AddUserToRequestMiddleware.
     current_user_account = None
@@ -82,16 +81,14 @@ class Revision(db.Model):
     number = db.IntegerProperty(required=True)
     
 class Factsheet(db.Model):
-    content = db.TextProperty(default='')
-    name = db.StringProperty()
-    modified = db.DateTimeProperty(auto_now=True)
-    editor = db.UserProperty(auto_current_user=True)
+    content         = db.TextProperty(default='')
+    name            = db.StringProperty()
+    modified        = db.DateTimeProperty(auto_now=True)
+    editor          = db.UserProperty(auto_current_user=True)
     revision_number = db.IntegerProperty(default=1)
     
-    meta_keys = {'subject':'meta_subject',
-                 'book':'meta_book'}
     meta_subject = db.StringProperty()
-    meta_book = db.StringProperty()
+    meta_book    = db.StringProperty()
     
     @classmethod
     def get_by_name(cls, name):
@@ -127,12 +124,6 @@ class Factsheet(db.Model):
             self.validate()
         return self._parsed if not self._errors else {}
         
-    def meta(self):
-        return dict([(key, getattr(self, attr)) for key, attr in self.meta_keys.items()])
-        
-    def source(self):
-        return self.new_content if self.new_content is not None else self.content
-        
     def errors(self):
         if not self._validated:
             self.validate()
@@ -145,7 +136,6 @@ class Factsheet(db.Model):
         try:
             obj = yaml.safe_load(t)
             self._validate_content(obj)
-            meta = obj['meta'] if (obj and 'meta' in obj) else {}
             self._validate_meta_data(meta)
         except yaml.parser.ParserError, e:
             self._errors.append({'message':'YAML syntax error.','content':e.problem_mark})
@@ -153,7 +143,7 @@ class Factsheet(db.Model):
             self._errors.append({'message':'Error in list format.',
                                  'content':(e.args[0])})
             logging.info(self._errors)
-                                 
+            
         #Validate title
         try:
             self._validate_title(self.title)
@@ -289,14 +279,15 @@ class Scheduler(Page):
 
 class Cardset(db.Model):
 
-    title = db.StringProperty(default='New Cardset')
-    owner = db.UserProperty(auto_current_user_add=True)
-    created = db.DateTimeProperty(auto_now_add=True)
-    modified = db.DateTimeProperty(auto_now=True)
-    public = db.BooleanProperty(default=True)
-    factsheet = db.ReferenceProperty(Factsheet)
-    template = db.ReferenceProperty(Template)
-    mapping = db.TextProperty(default='')
+    title         = db.StringProperty(default='New Cardset')
+    owner         = db.UserProperty(auto_current_user_add=True)
+    created       = db.DateTimeProperty(auto_now_add=True)
+    modified      = db.DateTimeProperty(auto_now=True)
+    public        = db.BooleanProperty(default=True)
+    factsheet     = db.ReferenceProperty(Factsheet)
+    template      = db.ReferenceProperty(Template)
+    template_name = db.StringProperty(default='default')
+    mapping       = db.TextProperty(default='')
         
     def sample(self):
         """ Renders a random card from connected factsheet. Renders a 'None'
@@ -306,13 +297,16 @@ class Cardset(db.Model):
             ids = self.factsheet.row_ids()
             if ids:
                 row           = self.factsheet.rows()[random.choice(ids)]
-                template_name = self.template.key().name().split(':')[1]
+                template_name = self.get_template_name()
                 mapping       = yaml.load(self.mapping)
                 return CardTemplate(template_name, mapping).render(row)
                 
-    def template_preview(self):
-        """ Renders a preview of this set's template """
-        
+    def get_template_name(self):
+        if self.template:
+            self.template_name = self.template.key().name().split(':')[1]
+            self.template = None
+            self.put()
+        return self.template_name
                 
     def mapping_json(self):
         return simplejson.dumps(yaml.load(self.mapping))
@@ -327,11 +321,11 @@ class Cardset(db.Model):
 class Box(db.Model):
     study_set_size = 10
     
-    title = db.StringProperty(default='New Box')
-    owner = db.UserProperty(auto_current_user_add=True)
-    modified = db.DateTimeProperty(auto_now=True)
-    cardsets = db.ListProperty(int)
-    scheduler = db.ReferenceProperty(Scheduler)
+    title        = db.StringProperty(default='New Box')
+    owner        = db.UserProperty(auto_current_user_add=True)
+    modified     = db.DateTimeProperty(auto_now=True)
+    cardsets     = db.ListProperty(int)
+    scheduler    = db.ReferenceProperty(Scheduler)
     last_studied = db.DateTimeProperty(default=datetime.datetime(2010,1,1))
     time_studied = TimeDeltaProperty(default=datetime.timedelta(0))
     
@@ -453,16 +447,16 @@ class Box(db.Model):
 
                     
 class Card(db.Model):
-    modified = db.DateTimeProperty(auto_now=True)
-    enabled = db.BooleanProperty(default=True)
-    in_study_set = db.BooleanProperty(default=False)
-    last_correct = db.DateTimeProperty(default=datetime.datetime(2010,1,2))
-    last_studied = db.DateTimeProperty(default=datetime.datetime(2010,1,1))
+    modified      = db.DateTimeProperty(auto_now=True)
+    enabled       = db.BooleanProperty(default=True)
+    in_study_set  = db.BooleanProperty(default=False)
+    last_correct  = db.DateTimeProperty(default=datetime.datetime(2010,1,2))
+    last_studied  = db.DateTimeProperty(default=datetime.datetime(2010,1,1))
     learned_until = db.DateTimeProperty(default=datetime.datetime(2010,1,2))
-    interval = db.IntegerProperty(default=1)
-    n_correct = db.IntegerProperty(default=0)
-    n_wrong = db.IntegerProperty(default=0)
-    history = db.TextProperty(default='')
+    interval      = db.IntegerProperty(default=1)
+    n_correct     = db.IntegerProperty(default=0)
+    n_wrong       = db.IntegerProperty(default=0)
+    history       = db.TextProperty(default='')
     
     def answered(self, correct=False):
         """ Update the card with correct/wrong stats."""
@@ -532,7 +526,7 @@ class Card(db.Model):
         # Fetch vars
         factsheet     = self.get_cardset().factsheet
         mapping       = yaml.load(self.get_cardset().mapping) #TODO Load yaml in cardset, not here
-        template_name = self.get_cardset().template.key().name().split(':')[1]
+        template_name = self.get_cardset().get_template_name()
         row_id        = self.key().name().split('-',1)[1]
         row           = factsheet.rows().get(row_id,None)
         if factsheet is None:

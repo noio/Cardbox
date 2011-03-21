@@ -48,6 +48,15 @@ var ListEditor = new Class({
         return tr.adopt(tds);
     },
     
+    addColumn: function(){
+        this.table.getElement('thead tr').grab(new Element('th'));
+        this.table.getElements('a.button').destroy();
+        this.table.getElements('tbody tr').each(function(row){
+            row.grab(new Element('td'));
+        });
+        this.update();
+    },
+    
     wrapCells: function(){
         var cells = this.table.getElements('th,td');
         cells.each(function(cell){
@@ -141,14 +150,15 @@ var CardsetEditor = new Class({
     initialize: function(element, listEditor){
         this.element = document.id(element);
         this.listEditor = listEditor;
+        //Setup all data
+        this.mapping   = JSON.decode(this.element.getElement('input[name=cardset-mapping]').value);
+        this.samplerow = this.listEditor.getRows().getRandom();
+        this.setTemplate(this.element.getElement('input[name=cardset-template]').value);
         // Add element for the draggers, render contents dynamically later.
         new Element('div.draggers').inject(this.element.getElement('.card-container'),'before')
-        // Decode the mapping
-        this.mapping = JSON.decode(this.element.getElement('input[name=cardset-mapping]').get('value'));
-        this.samplerow = this.listEditor.getRows().getRandom();
+
         this.render();
     },
-    
     
     render: function(){
         // Update the draggers
@@ -163,8 +173,11 @@ var CardsetEditor = new Class({
             var fieldname  = this.getFieldName(field);
             field.empty();
             if (fieldname in this.mapping && this.mapping[fieldname] in this.samplerow){
+                
                 field.set('html',this.samplerow[this.mapping[fieldname]])
                 field.grab(new Element('span.mapping',{'html':this.mapping[fieldname]}),'top')
+            } else {
+                field.set('html','&#160;&#160;')
             }
         },this);
         // Enable the draggers
@@ -210,6 +223,16 @@ var CardsetEditor = new Class({
     setMapping: function(fieldName, varName){
         this.mapping[fieldName] = varName;
         this.element.getElement('input[name=cardset-mapping]').set('value',JSON.encode(this.mapping))
+    },
+    
+    setTemplate: function(template){
+        var hr = new Request.HTML({
+            'url':'/template/'+template+'/view',
+            'update':this.element.getElement('.card-container'),
+            'onSuccess':function(t,e,h,j){
+                this.render();
+            }.bind(this)
+        }).get();
     }
     
 });

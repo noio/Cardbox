@@ -100,6 +100,7 @@ def list_edit(request, name):
         return HttpResponse(yaml.safe_dump({
             'columns':columns, 
             'rows':rows}))
+        
     return respond(request, 'list_edit.html',{'list':factsheet})
     
 @login_required

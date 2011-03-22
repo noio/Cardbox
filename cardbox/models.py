@@ -101,12 +101,12 @@ class Factsheet(db.Model):
         
     def __init__(self, is_revision=False, **kwds):
         db.Model.__init__(self, **kwds)
-        self._errors = []
-        self._validated = False
-        self._parsed = None
+        self._errors      = []
+        self._validated   = False
+        self._parsed      = None
         self._is_revision = is_revision
-        self.title = name_to_title(self.name)
-        self.new_content = None
+        self.title        = name_to_title(self.name)
+        self.new_content  = None
     
     @property
     def url(self):
@@ -114,89 +114,72 @@ class Factsheet(db.Model):
         """
         return reverse('cardbox.views.list_view',kwargs={'name':self.name})
         
+    def set_meta(book=None, subject=None):
+        if book is not None:
+            self.meta_book = book
+        if subject is not None:
+            self.meta_subject = subject
+    
+    def set_title(new_title):
+        name       = title_to_name(new_title)
+        VALID_NAME = r'^[a-z][\_a-z0-9]{4,49}$'    
+        matched    = re.match(VALID_NAME, name)
+        if not matched:
+            raise PageException("""Title (%s / %s) can only contain letters, numbers, and spaces.
+                                   It has to start with a letter, and it has to be between 5 and 50 letters long.
+                                """%(new_title,name))
+        other = Factsheet.all().filter('name', name).get()
+        if other:
+            raise PageException(mark_safe("There is already a page with this title. ( <a href='%s'>%s</a> )"
+                %(other.url, name_to_title(other.name))))
+        self.name = name
+        
+    def set_columns_and_rows(self, columns, rows):
+        self.parse(columns, rows)
+        self.new_content = yaml.safe_dump({'columns':columns, 'rows':rows})
+        
+    def parse(self, columns, rows):
+        row_dict  = {}
+        row_order = []
+        if isinstance(rows, dict):
+            rows = rows.values()
+        for row in rows:
+            if not isinstance(row[0],basestring):
+                raise PageException("Incorrect format in [%s]"%u','.join([unicode(b) for b in i]))
+            row_key = uri_b64encode(row[0].encode('utf-8'))
+            if len(columns) != len(row):
+                raise PageException("Row %s (%s) has wrong length." % (row_key,u','.join([unicode(b) for b in row])))
+            if row_key in row_dict:
+                raise PageException("Row %s (%s) has same first word as (%s)." % (row_key,
+                    u','.join([unicode(b) for b in row]), 
+                    u','.join(row_dict[row_key].values())))
+            row_order.append(row_key)
+            row_dict[row_key] = dict(zip(columns, row))
+        self._parsed = {'rows':row_dict,'order':row_order,'columns':columns}
+    
+    def parsed(self):
+        if not self._parsed:
+            yaml_obj = yaml.safe_load(self.content)
+            self.parse(yaml_obj['columns'], yaml_obj['rows'])
+        return self._parsed if not self._errors else {}
+    
     def try_to_save(self):
         self.validate()
         if not self._errors:
             self._save()
-            
-    def parsed(self):
-        if not self._validated:
-            self.validate()
-        return self._parsed if not self._errors else {}
-        
-    def errors(self):
-        if not self._validated:
-            self.validate()
-        return self._errors
-    
-    def validate(self):
-        self._errors = []
-        self._validated = True
-        t = self.new_content if self.new_content is not None else self.content
-        try:
-            obj = yaml.safe_load(t)
-            self._validate_content(obj)
-            self._validate_meta_data(meta)
-        except yaml.parser.ParserError, e:
-            self._errors.append({'message':'YAML syntax error.','content':e.problem_mark})
-        except PageException, e:
-            self._errors.append({'message':'Error in list format.',
-                                 'content':(e.args[0])})
-            logging.info(self._errors)
-            
-        #Validate title
-        try:
-            self._validate_title(self.title)
-        except PageException, e:
-            self._errors.append({'message':'Error in title.',
-                                 'content':(e.args[0])})
-            logging.info(self._errors)
-
-    def _validate_title(self, title):    
-        if title is None:
-            raise PageException("Title is empty.")
-        if len(title) < 5:
-            raise PageException("Title is too short.")
-        name = title_to_name(title)
-        if self.name == name:
-            return name
-        VALID_NAME = r'^[a-z]+(\_[a-z0-9]+)*$'    
-        matched = re.match(VALID_NAME, name)
-        if not matched:
-            raise PageException("Title (%s / %s) can only contain letters, numbers, and spaces."%(title,name))
-        q = self.__class__.all()
-        q.filter('name', name)
-        other = q.get()
-        if other:
-            raise PageException(mark_safe("There is already a page with this title. ( <a href='%s'>here</a> )"
-                %other.url))
-        self.name = name
-        return name
-        
-    def _validate_meta_data(self, meta):
-        for key, attr_name in self.meta_keys.items():
-            if key in meta and hasattr(self,attr_name):
-                value = meta[key]
-                if not re.match(r'^[a-zA-Z0-9 ]+$',value):
-                    raise PageException("Meta value for '%s' can only contain letters, numbers and spaces."%value)
-                value = re.sub(r' +',' ',value).lower()
-                setattr(self, attr_name, value)
-    
-    def _validate_content(self, parsed):
-        self._parsed = parsed
     
     def _save(self):
         """ Modifies the content of page, creates rev if necessary. 
         """
-        def txn(page, new_content, patch):
-            r = Revision(parent=page,
-                         editor=page.editor,
+        def txn(factsheet, new_content, patch):
+            r = Revision(parent=factsheet,
+                         editor=factsheet.editor,
                          content=patch,
-                         number=page.revision_number)
-            page.content = new_content
-            page.revision_number += 1
+                         number=factsheet.revision_number)
+            factsheet.content = new_content
+            factsheet.revision_number += 1
             r.put()
-            page.put()
+            factsheet.put()
         
         if self._is_revision:
             raise Exception("Cannot save revision.")
@@ -207,7 +190,6 @@ class Factsheet(db.Model):
         else:
             self.content = self.new_content
             self.put()
-    
 
     def revision(self, number):
         """ Returns a given revision
@@ -229,32 +211,6 @@ class Factsheet(db.Model):
                                       number=earliest.number,
                                       is_revision=True)
         return revised_page
-    
-    def _validate_content(self, yaml_obj):
-        if yaml_obj is None:
-            raise PageException('The list is empty.')
-        columns = yaml_obj['columns']
-        rows = yaml_obj['rows']
-        d = {}
-        row_order =[]
-        for index,i in enumerate(rows):
-            if isinstance(rows,dict):  # TODO: Deprecate dict format.
-                row_key, row = str(i), rows[i]
-            else:
-                if not isinstance(i[0],basestring):
-                    raise PageException("Incorrect format in [%s]"%u','.join([unicode(b) for b in i]))
-                row_key, row = uri_b64encode(i[0].encode('utf-8')), i
-            if not re.match(r'^[A-Za-z0-9\.=\-_]+$',row_key):
-                raise PageException("Error in row %s (%s). Row names can only contain letters, numbers and . (period)" % (row_key,u','.join([unicode(b) for b in row])))
-            if len(columns) != len(row):
-                raise PageException("Row %s (%s) has wrong length." % (row_key,u','.join([unicode(b) for b in row])))
-            if row_key in d:
-                raise PageException("Row %s (%s) has same first word as (%s)." % (row_key,
-                    u','.join([unicode(b) for b in row]), 
-                    u','.join(d[row_key].values())))
-            row_order.append(row_key)
-            d[row_key] = dict(zip(columns, row))
-        self._parsed = {'rows':d,'order':row_order,'columns':columns}
         
     def row_order(self):
         return self.parsed().get('order',[])
@@ -708,9 +664,8 @@ class TimelineChart(object):
 ### Helper Functions ###
 
 def title_to_name(title):
-    REMOVE = r'[ \_\-]+'
-    VALID_TITLE = r'^[a-z]+(\_[a-z0-9]+)*$'
-    return re.sub(REMOVE,'_',title).lower()
+    SPACES = r'[ \_\-]+'
+    return re.sub(SPACES,'_',title).lower()
     
 def name_to_title(name):
     if name is None: 

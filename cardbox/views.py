@@ -11,6 +11,7 @@ import unicodedata
 import operator
 import hashlib
 import datetime
+import pprint
 
 # AppEngine imports
 from google.appengine.ext import db
@@ -86,7 +87,9 @@ def list_edit(request, name):
     LIST_HEADER_FORMAT = 'list-header-%d'
     LIST_CELL_FORMAT   = 'list-row-%d-col-%d'
     factsheet = models.Factsheet.get_by_name(name)
+    errors = []
     if request.method == 'POST':
+        # return HttpResponse(pprint.pformat(dict(request.POST.copy())))
         # Extract columns
         columns = [request.POST[LIST_HEADER_FORMAT%v] for v in range(10) if LIST_HEADER_FORMAT%v in request.POST]
         # Extract rows
@@ -97,11 +100,36 @@ def list_edit(request, name):
         # Extract meta
         meta_book    = request.POST['list-meta-book'];
         meta_subject = request.POST['list-meta-subject'];
-        return HttpResponse(yaml.safe_dump({
-            'columns':columns, 
-            'rows':rows}))
+        try:
+            factsheet.set_meta(meta_book,meta_subject)
+            factsheet.set_columns_and_rows(columns,rows)
+            factsheet.save()
+        except models.FactsheetError, e:
+            errors.append(str(e))
+            
+        # Process cardset form
+        if 'cardset-id' in request.POST:
+            cids      = request.POST.getlist('cardset-id')
+            mappings  = request.POST.getlist('cardset-mapping')
+            templates = request.POST.getlist('cardset-template')
+            titles    = request.POST.getlist('cardset-title')
+            for cid, mapping, template, title in zip(cids, mappings, templates, titles):
+                # Check if an existing set is edited
+                if cid.isdigit():
+                    cardset = models.Cardset.get_by_id(int(cid))
+                    if cardset is None:
+                        errors.append('Edited Cardset not found')
+                else:
+                    cardset = models.Cardset()
+                try:
+                    cardset.set_mapping(simplejson.loads(mapping))
+                    cardset.set_title(title)
+                    cardset.set_template(template)
+                    cardset.put()
+                except models.CardsetError, e:
+                    errors.append('Error in Cardset "%s"(%s) : %s'%(title, cid, str(e)))
         
-    return respond(request, 'list_edit.html',{'list':factsheet})
+    return respond(request, 'list_edit.html',{'list':factsheet,'errors':errors})
     
 @login_required
 def list_create(request):

@@ -20,6 +20,12 @@
                 <li><a class='button-save' href='#' onClick='$("list-edit-form").submit()'><span class='icon'></span>Save Changes</a></li>
             </ul></div>
         </div>
+        
+        <ul class='errors'>
+            {% for error in errors %}
+            {{error}}
+            {% endfor %}
+        </ul>
    
         <input type='text' name='list-meta-book' value='{{list.meta_book|default_if_none:""}}'>
         <input type='text' name='list-meta-subject' value='{{list.meta_subject|default_if_none:""}}'>
@@ -46,7 +52,7 @@
         </table>
         
         
-        <div class='span-24'>
+        <div id='cardset-editors'>
             {% for cardset in list.cardset_set %}
             <div class='cardset-editor'>
                 <input type='text' name='cardset-title' value='{{cardset.title}}'>
@@ -56,8 +62,9 @@
                 <div class='card-container splitview'>{{cardset.sample}}</div>
             </div>
             {% endfor %}
-            <a id='button-addset' href='#'>Add a new set</a>
         </div>
+        <a id='button-addset' href='#'>Add a new set</a>
+        
             
         <script type='text/javascript'> 
             window.listEditor = new ListEditor('list-edit-form');
@@ -67,7 +74,7 @@
             document.id('button-addset').addEvent('click',function(e){
                 e.preventDefault();
                 window.cardsetEditors.push(new CardsetEditor(
-                    $('new-cardset-editor').clone().inject($('new-cardset-editor'),'before').setStyle('display',''),
+                    $('new-cardset-editor').clone().inject($('cardset-editors')).setStyle('display',''),
                     window.listEditor
                 ));
             });

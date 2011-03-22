@@ -1,6 +1,7 @@
 ### Imports ###
 
 # Python Imports
+import os
 import re
 import datetime
 import time
@@ -33,7 +34,10 @@ RE_CARD_FRONT          = re.compile('<!--FRONT-->(.*?)<!--/FRONT-->',re.S)
 RE_CARD_BACK           = re.compile('<!--BACK-->(.*?)<!--/BACK-->',re.S)
 
 ### Exceptions ###
-class PageException(Exception):
+class FactsheetError(Exception):
+    pass
+
+class CardsetError(Exception):
     pass
 
 
@@ -101,8 +105,6 @@ class Factsheet(db.Model):
         
     def __init__(self, is_revision=False, **kwds):
         db.Model.__init__(self, **kwds)
-        self._errors      = []
-        self._validated   = False
         self._parsed      = None
         self._is_revision = is_revision
         self.title        = name_to_title(self.name)
@@ -114,7 +116,7 @@ class Factsheet(db.Model):
         """
         return reverse('cardbox.views.list_view',kwargs={'name':self.name})
         
-    def set_meta(book=None, subject=None):
+    def set_meta(self,book=None, subject=None):
         if book is not None:
             self.meta_book = book
         if subject is not None:
@@ -123,14 +125,13 @@ class Factsheet(db.Model):
     def set_title(new_title):
         name       = title_to_name(new_title)
         VALID_NAME = r'^[a-z][\_a-z0-9]{4,49}$'    
-        matched    = re.match(VALID_NAME, name)
-        if not matched:
-            raise PageException("""Title (%s / %s) can only contain letters, numbers, and spaces.
-                                   It has to start with a letter, and it has to be between 5 and 50 letters long.
-                                """%(new_title,name))
+        if not re.match(VALID_NAME, name):
+            raise FactsheetError("""Title (%s / %s) can only contain letters, numbers, and spaces.
+                                        It has to start with a letter, and it has to be between 5 and 50 letters long.
+                                     """%(new_title,name))
         other = Factsheet.all().filter('name', name).get()
         if other:
-            raise PageException(mark_safe("There is already a page with this title. ( <a href='%s'>%s</a> )"
+            raise FactsheetError(mark_safe("There is already a page with this title. ( <a href='%s'>%s</a> )"
                 %(other.url, name_to_title(other.name))))
         self.name = name
         
@@ -145,12 +146,12 @@ class Factsheet(db.Model):
             rows = rows.values()
         for row in rows:
             if not isinstance(row[0],basestring):
-                raise PageException("Incorrect format in [%s]"%u','.join([unicode(b) for b in i]))
+                raise FactsheetError("Incorrect format in [%s]"%u','.join([unicode(b) for b in i]))
             row_key = uri_b64encode(row[0].encode('utf-8'))
             if len(columns) != len(row):
-                raise PageException("Row %s (%s) has wrong length." % (row_key,u','.join([unicode(b) for b in row])))
+                raise FactsheetError("Row %s (%s) has wrong length." % (row_key,u','.join([unicode(b) for b in row])))
             if row_key in row_dict:
-                raise PageException("Row %s (%s) has same first word as (%s)." % (row_key,
+                raise FactsheetError("Row %s (%s) has same first word as (%s)." % (row_key,
                     u','.join([unicode(b) for b in row]), 
                     u','.join(row_dict[row_key].values())))
             row_order.append(row_key)
@@ -161,14 +162,9 @@ class Factsheet(db.Model):
         if not self._parsed:
             yaml_obj = yaml.safe_load(self.content)
             self.parse(yaml_obj['columns'], yaml_obj['rows'])
-        return self._parsed if not self._errors else {}
+        return self._parsed
     
-    def try_to_save(self):
-        self.validate()
-        if not self._errors:
-            self._save()
-    
-    def _save(self):
+    def save(self):
         """ Modifies the content of page, creates rev if necessary. 
         """
         def txn(factsheet, new_content, patch):
@@ -187,6 +183,7 @@ class Factsheet(db.Model):
             differ = dmp.diff_match_patch()
             patch = differ.patch_toText(differ.patch_make(self.new_content, self.content))
             db.run_in_transaction(txn, self, self.new_content, patch)
+            logging.info("Created new revision (%d) for factsheet %s"%(self.revision_number,self.name))
         else:
             self.content = self.new_content
             self.put()
@@ -224,14 +221,11 @@ class Factsheet(db.Model):
     def rows(self):
         return self.parsed()['rows']
 
-
 class Template(Page):
     pass
 
-
 class Scheduler(Page):
     pass
-
 
 class Cardset(db.Model):
 
@@ -263,12 +257,30 @@ class Cardset(db.Model):
             self.template = None
             self.put()
         return self.template_name
+        
+    def set_title(self, title):
+        VALID_TITLE = r'^[a-z][\- a-z0-9]{4,49}$'    
+        if not re.match(VALID_TITLE, title.lower()):
+            raise CardsetError("""Title (%s) must start with a letter. It can contain 
+                                  only letters, numbers, spaces, and dashes."""%title)
+        self.title = title
+        
+    def set_template(self, template):
+        if (template+'.html') not in os.listdir('templates/cards/'):
+            raise CardsetError("Template (%s) not found."%template)
+        self.template_name = template
+        
+    def set_mapping(self, mapping):
+        for v in mapping.values():
+            if v != '' and v not in self.factsheet.columns():
+                raise CardsetError('Mapping contains non-existent column name "%s".'%v)
+        self.mapping = yaml.safe_dump(mapping)
                 
     def mapping_json(self):
         return simplejson.dumps(yaml.load(self.mapping))
         
     def all_ids(self):
-        if self.factsheet is not None and not self.factsheet.errors():
+        if self.factsheet is not None:
             k = self.key().id()
             return [(k, c_id) for c_id in self.factsheet.row_ids()]
         else:
@@ -469,10 +481,10 @@ class Card(db.Model):
         return last_state
         
     def charts(self):
-        chart = TimelineChart()
-        history = yaml.load(self.history)
-        times = []
-        intervals = []
+        chart         = TimelineChart()
+        history       = yaml.load(self.history)
+        times         = []
+        intervals     = []
         learned_until = []
         times, a, b, intervals, learned_until = zip(*history)
         chart.add_line(times, intervals, 'Interval')
@@ -487,20 +499,17 @@ class Card(db.Model):
         row           = factsheet.rows().get(row_id,None)
         if factsheet is None:
             return CardTemplate.render_error("Factsheet not found or empty.")
-        if factsheet.errors():
-            return CardTemplate.render_error("Factsheet contains errors.")
         if row is None:
             return CardTemplate.render_error("Card not found in factsheet.")
         # Actual rendering
         template = CardTemplate(template_name, mapping)
         return template.render(row)
         
-        
 class DailyBoxStats(db.Model):
     """ Keeps track of daily stats for parent box. """
-    day = db.DateProperty()
-    n_learned = db.IntegerProperty()
-    n_cards = db.IntegerProperty()
+    day          = db.DateProperty()
+    n_learned    = db.IntegerProperty()
+    n_cards      = db.IntegerProperty()
     avg_interval = db.FloatProperty(default=1.0)
     min_interval = db.IntegerProperty(default=1)
     max_interval = db.IntegerProperty(default=1)
@@ -704,4 +713,3 @@ def uri_b64encode(s):
 
 def uri_b64decode(s):
     return base64.urlsafe_b64decode(s + '=' * (4 - ((len(s) % 4) or 4)))
-    

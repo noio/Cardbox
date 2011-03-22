@@ -18,7 +18,7 @@ MIDDLEWARE_CLASSES = (
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.request',
 )
-TEMPLATE_STRING_IF_INVALID = 'ERROR IN %s' if DEBUG else ''
+TEMPLATE_STRING_IF_INVALID = 'err{{%s}}' if DEBUG else ''
 TEMPLATE_DEBUG = DEBUG
 TEMPLATE_DIRS = (
     os.path.join(ROOT_PATH, 'templates'),

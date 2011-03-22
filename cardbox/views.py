@@ -95,7 +95,9 @@ def list_edit(request, name):
         # Extract rows
         i, rows = 0, []
         while LIST_CELL_FORMAT%(i,0) in request.POST:
-            rows.append([request.POST[LIST_CELL_FORMAT%(i,j)] for j in xrange(len(columns))])
+            row = [request.POST[LIST_CELL_FORMAT%(i,j)] for j in xrange(len(columns))]
+            if any(row):
+                rows.append(row)
             i += 1
         # Extract meta
         meta_book    = request.POST['list-meta-book'];
@@ -121,6 +123,7 @@ def list_edit(request, name):
                         errors.append('Edited Cardset not found')
                 else:
                     cardset = models.Cardset()
+                    cardset.factsheet = factsheet
                 try:
                     cardset.set_mapping(simplejson.loads(mapping))
                     cardset.set_title(title)
@@ -145,7 +148,7 @@ def box_create(request):
 
 @login_required
 def box_edit(request, box_id=None):
-    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=True)
+    box = models.Box() if (box_id is None) else get_by_id_or_404(request, models.Box, box_id)
     if request.method == 'POST':
         box.title = request.POST['title']
         box.cardsets = [int(x) for x in request.POST['cardsets'].split(',') if x != '']
@@ -158,7 +161,7 @@ def box_edit(request, box_id=None):
     
 @login_required
 def box_stats(request, box_id):
-    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
+    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True)
     #print box.charts()['n_cards'].img()
     return respond(request, 'box_stats.html',{'box':box})
 
@@ -167,7 +170,7 @@ def study(request, box_id):
     if not request.user.has_studied:
         request.user.has_studied = True
         request.user.put()
-    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
+    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True)
     return respond(request, 'study.html',{'box':box})
     
 @login_required
@@ -178,7 +181,7 @@ def update_card(request,box_id):
         raise Http404
     card_id = request.POST['card_id']
     correct = request.POST['correct'] == 'true'
-    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
+    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True)
     studied_card = models.Card.get_by_key_name(card_id, parent=box)
     studied_card.answered(correct)
     return HttpResponse('success')
@@ -187,14 +190,14 @@ def update_card(request,box_id):
 def next_card(request, box_id):
     """ Returns a random next card from given box.
     """
-    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
+    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True)
     card = box.card_to_study()
     return respond(request, 'card_study.html',{'box':box,'card':card})
 
     
 @login_required
 def card_view(request, box_id, card_id):
-    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True, new_if_id_none=False)
+    box = get_by_id_or_404(request, models.Box, box_id, require_owner=True)
     card = models.Card.get_by_key_name(card_id, parent=box)
     return respond(request, 'card_view.html', {'card':card})
     
@@ -246,14 +249,11 @@ def respond(request, template, params=None):
     return render_to_response(template, params)
 
 
-def get_by_id_or_404(request, kind, entity_id, require_owner=True, new_if_id_none=True):
+def get_by_id_or_404(request, kind, entity_id, require_owner=True):
     """ Gets an entity by id. If the id is not found, will error,
         unless new_if_id_none, in that case a new entity is returned.
     """
-    if isinstance(entity_id, basestring):
-        entity_id = int(entity_id)
-    if new_if_id_none and entity_id is None:
-        return kind()
+    entity_id = int(entity_id) if isinstance(entity_id, basestring) else entity_id
     entity = kind.get_by_id(entity_id)
     account = models.Account.current_user_account
     if entity is None:

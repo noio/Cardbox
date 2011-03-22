@@ -297,11 +297,6 @@ class Box(db.Model):
     last_studied = db.DateTimeProperty(default=datetime.datetime(2010,1,1))
     time_studied = TimeDeltaProperty(default=datetime.timedelta(0))
     
-    def __init__(self, *args, **kwds):
-        super(Box,self).__init__(*args, **kwds)
-        if self.scheduler is None:
-            self.scheduler = Scheduler.all().get()
-
     def update_cards(self):
         from engine import update_cards
         update_cards(self.all_card_ids(), self.key())

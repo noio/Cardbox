@@ -13,7 +13,7 @@
         <form id='list-edit-form' action="{% url cardbox.views.list_create %}" method="post">
         <div class='page-head'>
             <span class='item-icon list'></span>
-            <h3><span class='faded'>Creating a list named: </span></h3> <input class='title' name='title' type='text' value='{{page.title}}'>
+            <h3><span class='faded'>Creating a list named: </span></h3> <input class='title' name='title' type='text' value='{{list.title}}'>
         {% endif %}
             <div class='button-bar standalone'><ul>
                 {% if list.is_saved %}<li><a class='button-cancel' href='{% url cardbox.views.list_view name=list.name %}'><span class='icon'></span>Cancel</a></li>{%endif%}
@@ -53,6 +53,7 @@
         
         
         <div id='cardset-editors'>
+            {% if list.is_saved %}
             {% for cardset in list.cardset_set %}
             <div class='cardset-editor'>
                 <input type='text' name='cardset-title' value='{{cardset.title}}'>
@@ -62,6 +63,7 @@
                 <div class='card-container splitview'>{{cardset.sample}}</div>
             </div>
             {% endfor %}
+            {% endif %}
         </div>
         <a id='button-addset' href='#'>Add a new set</a>
         
@@ -74,8 +76,7 @@
             document.id('button-addset').addEvent('click',function(e){
                 e.preventDefault();
                 window.cardsetEditors.push(new CardsetEditor(
-                    $('new-cardset-editor').clone().inject($('cardset-editors')).setStyle('display',''),
-                    window.listEditor
+                    $('new-cardset-editor').clone().inject($('cardset-editors')).setStyle('display',''),window.listEditor
                 ));
             });
         </script>

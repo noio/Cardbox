@@ -1,6 +1,6 @@
 // MooTools: the javascript framework.
-// Load this file's selection again by visiting: http://mootools.net/more/de5ce35d402b30bd0e4620b5500a1d64 
-// Or build this file again with packager using: packager build More/Hash More/Element.Measure More/Element.Position More/Element.Shortcuts More/Fx.Elements More/Fx.Move More/Fx.Slide More/Drag.Move More/Request.JSONP More/Request.Queue More/Request.Periodical More/Keyboard More/Tips
+// Load this file's selection again by visiting: http://mootools.net/more/378b93855d1e20797787c0ad62cd02dd 
+// Or build this file again with packager using: packager build More/Chain.Wait More/Hash More/Element.Measure More/Element.Position More/Element.Shortcuts More/Fx.Elements More/Fx.Move More/Fx.Slide More/Drag.Move More/Request.JSONP More/Request.Queue More/Request.Periodical More/Keyboard More/Tips
 /*
 ---
 copyrights:
@@ -10,11 +10,13 @@ licenses:
   - [MIT License](http://mootools.net/license.txt)
 ...
 */
-MooTools.More={version:"1.3.1.1",build:"0292a3af1eea242b817fecf9daa127417d10d4ce"};(function(){if(this.Hash){return;}var a=this.Hash=new Type("Hash",function(b){if(typeOf(b)=="hash"){b=Object.clone(b.getClean());
-}for(var c in b){this[c]=b[c];}return this;});this.$H=function(b){return new a(b);};a.implement({forEach:function(b,c){Object.forEach(this,b,c);},getClean:function(){var c={};
-for(var b in this){if(this.hasOwnProperty(b)){c[b]=this[b];}}return c;},getLength:function(){var c=0;for(var b in this){if(this.hasOwnProperty(b)){c++;
-}}return c;}});a.alias("each","forEach");a.implement({has:Object.prototype.hasOwnProperty,keyOf:function(b){return Object.keyOf(this,b);},hasValue:function(b){return Object.contains(this,b);
-},extend:function(b){a.each(b||{},function(d,c){a.set(this,c,d);},this);return this;},combine:function(b){a.each(b||{},function(d,c){a.include(this,c,d);
+MooTools.More={version:"1.3.1.1",build:"0292a3af1eea242b817fecf9daa127417d10d4ce"};(function(){var a={wait:function(b){return this.chain(function(){this.callChain.delay(b==null?500:b,this);
+}.bind(this));}};Chain.implement(a);if(this.Fx){Fx.implement(a);}if(this.Element&&Element.implement&&this.Fx){Element.implement({chains:function(b){Array.from(b||["tween","morph","reveal"]).each(function(c){c=this.get(c);
+if(!c){return;}c.setOptions({link:"chain"});},this);return this;},pauseFx:function(c,b){this.chains(b).get(b||"tween").wait(c);return this;}});}}).call(this);
+(function(){if(this.Hash){return;}var a=this.Hash=new Type("Hash",function(b){if(typeOf(b)=="hash"){b=Object.clone(b.getClean());}for(var c in b){this[c]=b[c];
+}return this;});this.$H=function(b){return new a(b);};a.implement({forEach:function(b,c){Object.forEach(this,b,c);},getClean:function(){var c={};for(var b in this){if(this.hasOwnProperty(b)){c[b]=this[b];
+}}return c;},getLength:function(){var c=0;for(var b in this){if(this.hasOwnProperty(b)){c++;}}return c;}});a.alias("each","forEach");a.implement({has:Object.prototype.hasOwnProperty,keyOf:function(b){return Object.keyOf(this,b);
+},hasValue:function(b){return Object.contains(this,b);},extend:function(b){a.each(b||{},function(d,c){a.set(this,c,d);},this);return this;},combine:function(b){a.each(b||{},function(d,c){a.include(this,c,d);
 },this);return this;},erase:function(b){if(this.hasOwnProperty(b)){delete this[b];}return this;},get:function(b){return(this.hasOwnProperty(b))?this[b]:null;
 },set:function(b,c){if(!this[b]||this.hasOwnProperty(b)){this[b]=c;}return this;},empty:function(){a.each(this,function(c,b){delete this[b];},this);return this;
 },include:function(b,c){if(this[b]==undefined){this[b]=c;}return this;},map:function(b,c){return new a(Object.map(this,b,c));},filter:function(b,c){return new a(Object.filter(this,b,c));

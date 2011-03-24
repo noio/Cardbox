@@ -89,9 +89,9 @@ def list_edit(request, name):
     factsheet = models.Factsheet.get_by_name(name)
     errors = []
     if request.method == 'POST':
-        # return HttpResponse(pprint.pformat(dict(request.POST.copy())))
-        # Extract columns
+        # Extract columns and trim last column if unused
         columns = [request.POST[LIST_HEADER_FORMAT%v] for v in range(10) if LIST_HEADER_FORMAT%v in request.POST]
+        columns = columns if columns[-1] else columns[:-1]
         # Extract rows
         i, rows = 0, []
         while LIST_CELL_FORMAT%(i,0) in request.POST:
@@ -150,19 +150,25 @@ def box_create(request):
 def box_edit(request, box_id=None):
     box = models.Box() if (box_id is None) else get_by_id_or_404(request, models.Box, box_id)
     if request.method == 'POST':
-        box.title = request.POST['title']
-        box.cardsets = [int(x) for x in request.POST['cardsets'].split(',') if x != '']
+        if 'title' in request.POST:
+            box.title = request.POST['title']
+        if 'add-cardset' in request.POST:
+            cid = int(request.POST['add-cardset'])
+            if cid not in box.cardsets:
+                box.cardsets.append(cid)
+        if 'cardset-id' in request.POST:
+            box.cardsets = [int(x) for x in request.POST.getlist('cardset-id') if x != '']
         box.update_cards()
         box.put()
+        if request.is_ajax():
+            return HttpResponse('success')
         return HttpResponseRedirect(reverse('cardbox.views.frontpage'))
-    
-    cardsets = models.Cardset.all().fetch(1000)
-    return respond(request, 'box.html',{'box':box, 'cardsets':cardsets})
+
+    return respond(request, 'box.html',{'box':box})
     
 @login_required
 def box_stats(request, box_id):
     box = get_by_id_or_404(request, models.Box, box_id, require_owner=True)
-    #print box.charts()['n_cards'].img()
     return respond(request, 'box_stats.html',{'box':box})
 
 @login_required
@@ -192,6 +198,7 @@ def next_card(request, box_id):
     """
     box = get_by_id_or_404(request, models.Box, box_id, require_owner=True)
     card = box.card_to_study()
+    card.render()
     return respond(request, 'card_study.html',{'box':box,'card':card})
 
     
@@ -201,8 +208,12 @@ def card_view(request, box_id, card_id):
     card = models.Card.get_by_key_name(card_id, parent=box)
     return respond(request, 'card_view.html', {'card':card})
     
-def template_view_ajax(request, template_name):
+def template_view(request, template_name):
     return HttpResponse(models.CardTemplate(template_name).render_fields())
+    
+def template_fields(request, template_name):
+    m = models.CardTemplate(template_name)
+    return HttpResponse(simplejson.dumps({'front':m.front_fields,'back':m.back_fields}))
 
 def maintenance(request):
     return HttpResponse("Doing some maintenance, we'll be back really soon.")

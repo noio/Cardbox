@@ -14,7 +14,7 @@ urlpatterns = patterns('',
    (r"^list/all/browse$", "cardbox.views.list_browse"),
    
    (r"^box/create$","cardbox.views.box_create"),
-   (r"^box/([0-9]+)/edit$","cardbox.views.box_edit"),
+   (r"^box/([0-9]+)/$","cardbox.views.box_edit"),
    (r"^box/([0-9]+)/stats$","cardbox.views.box_stats"),
    
    (r"^box/([0-9]+)/study$","cardbox.views.study"),
@@ -23,6 +23,6 @@ urlpatterns = patterns('',
    
    (r"^box/(?P<box_id>[0-9]+)/card/(?P<card_id>[0-9]+\-[A-Za-z0-9\-\_\.]+)/view$","cardbox.views.card_view"),
    
-   (r"^template/([a-z0-9\_]+)/view","cardbox.views.template_view_ajax"),
-   
+   (r"^template/([a-z0-9\_]+)/view","cardbox.views.template_view"),
+   (r"^template/([a-z0-9\_]+)/fields","cardbox.views.template_fields")
 )

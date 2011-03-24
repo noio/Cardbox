@@ -50,7 +50,6 @@ var ListEditor = new Class({
     
     addColumn: function(){
         this.table.getElement('thead tr').grab(new Element('th'));
-        this.table.getElements('a.button').destroy();
         this.table.getElements('tbody tr').each(function(row){
             row.grab(new Element('td'));
         });
@@ -71,10 +70,18 @@ var ListEditor = new Class({
     },
     
     addButtons: function(){
+        this.table.getElements('a.button').destroy();
+        var lastheader = this.table.getElement('thead tr th:last-child');
+        lastheader.grab(new Element('a',{
+            'html':'add column','href':'#','class':'button action-add',
+            'events':{
+                'click':function(event){
+                    event.preventDefault();
+                    this.addColumn();
+                }.bind(this)
+            }
+        }));
         var rows = this.table.getElements('tbody tr').slice(0,-1);
-        rows = rows.filter(function(r){
-            return !r.getElement('.button')
-        });
         rows.each(function(row,i){
             var first = row.getElement('td:first-child');
             var last  = row.getElement('td:last-child');
@@ -122,7 +129,7 @@ var ListEditor = new Class({
     checkEmpty: function(){
         var cells = this.table.getElements('th,td');
         if (cells.length == 0){
-            var headerRow = new Element('tr').adopt([new Element('th'),new Element('th')]);
+            var headerRow = this.table.getElement('thead tr').adopt([new Element('th'),new Element('th')]);
             this.table.getElement('thead').adopt(headerRow);
             this.table.getElement('tbody').adopt(this.newRow());
             this.table.getElement('tbody').adopt(this.newRow());
@@ -155,8 +162,7 @@ var CardsetEditor = new Class({
         this.samplerow = this.listEditor.getRows().getRandom();
         this.setTemplate(this.element.getElement('input[name=cardset-template]').value);
         // Add element for the draggers, render contents dynamically later.
-        new Element('div.draggers').inject(this.element.getElement('.card-container'),'before')
-
+        new Element('div.draggers').inject(this.element.getElement('.card-container'),'before');
         this.render();
     },
     
@@ -173,7 +179,6 @@ var CardsetEditor = new Class({
             var fieldname  = this.getFieldName(field);
             field.empty();
             if (fieldname in this.mapping && this.mapping[fieldname] in this.samplerow){
-                
                 field.set('html',this.samplerow[this.mapping[fieldname]])
                 field.grab(new Element('span.mapping',{'html':this.mapping[fieldname]}),'top')
             } else {
@@ -211,6 +216,24 @@ var CardsetEditor = new Class({
             });
             drag.start(event);
         });
+        // Update the suggested title
+        this.setSuggestedTitle()
+    },
+    
+    setSuggestedTitle: function(){
+        if (this.templateFields === undefined) return;
+        // Get the most important field + what it's mapped to.
+        var f = this.templateFields.front.map(function(f){return this.mapping[f]}.bind(this));
+        var b = this.templateFields.back.map(function(f){return this.mapping[f]}.bind(this));
+        b = b.filter(function(field){return !f.contains(field);});
+        f = f.pick()
+        b = b.pick();
+        // Set title only if current title empty or also autoset.
+        var currentTitle = this.element.getElement('input[name=cardset-title]').get('value')
+        if (f && b && (!currentTitle || currentTitle.contains(' - ')) ){
+            var t = f + ' - ' + b
+            this.element.getElement('input[name=cardset-title]').set('value',t)
+        }
     },
     
     getFieldName: function(field){
@@ -221,7 +244,11 @@ var CardsetEditor = new Class({
     },
     
     setMapping: function(fieldName, varName){
-        this.mapping[fieldName] = varName;
+        if (varName){
+            this.mapping[fieldName] = varName;
+        } else {
+            delete this.mapping[fieldName];
+        }
         this.element.getElement('input[name=cardset-mapping]').set('value',JSON.encode(this.mapping))
     },
     
@@ -233,6 +260,13 @@ var CardsetEditor = new Class({
                 this.render();
             }.bind(this)
         }).get();
+        
+        var jr = new Request.JSON({
+            'url':'/template/'+template+'/fields',
+            'onSuccess':function(j,t){
+                this.templateFields = j;
+            }.bind(this)
+        }).get()
     }
     
 });

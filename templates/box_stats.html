@@ -14,7 +14,7 @@
             <h4>Up next <span class='faded'>in this box</span></h4>
             <ul class='cloud'>
                 {% for card in box.study_set %}
-                    <li class='card-data'><span class='front'>{{card.rendered.front_data|join:", "}}</span>{{card.rendered.back_data|join:", "}}</li>
+                    <li class='card-data'><span class='front'>{{card.data.front|first}}</span>{{card.data.back|first}}</li>
                 {% endfor %}
             </ul>
         </div>

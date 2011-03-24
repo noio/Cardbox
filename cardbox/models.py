@@ -107,7 +107,6 @@ class Factsheet(db.Model):
         db.Model.__init__(self, **kwds)
         self._parsed      = None
         self._is_revision = is_revision
-        self.title        = name_to_title(self.name)
         self.new_content  = None
     
     @property
@@ -115,6 +114,9 @@ class Factsheet(db.Model):
         """ Returns the view-url for this page. 
         """
         return reverse('cardbox.views.list_view',kwargs={'name':self.name})
+        
+    def title(self):
+        return name_to_title(self.name) if self.name != '' else ''
         
     def set_meta(self,book=None, subject=None):
         if book is not None:
@@ -139,7 +141,7 @@ class Factsheet(db.Model):
         self.parse(columns, rows)
         self.new_content = yaml.safe_dump({'columns':columns, 'rows':rows})
         
-    def parse(self, columns, rows):
+    def parse(self, columns=[], rows=[]):
         row_dict  = {}
         row_order = []
         if isinstance(rows, dict):
@@ -160,8 +162,11 @@ class Factsheet(db.Model):
     
     def parsed(self):
         if not self._parsed:
-            yaml_obj = yaml.safe_load(self.content)
-            self.parse(yaml_obj['columns'], yaml_obj['rows'])
+            if self.content == '':
+                self.parse()
+            else:
+                yaml_obj = yaml.safe_load(self.content)
+                self.parse(yaml_obj['columns'], yaml_obj['rows'])
         return self._parsed
     
     def save(self):
@@ -257,6 +262,14 @@ class Cardset(db.Model):
             self.template = None
             self.put()
         return self.template_name
+    
+    def contents(self):
+        o = []
+        renderer = CardTemplate(self.get_template_name(), yaml.load(self.mapping))
+        for row in self.factsheet.rows().values():
+            renderer.set_content(row)
+            o.append({'front':renderer.front_data, 'back':renderer.back_data})
+        return o
         
     def set_title(self, title):
         VALID_TITLE = r'^[a-z][\- a-z0-9]{4,49}$'    
@@ -271,6 +284,8 @@ class Cardset(db.Model):
         self.template_name = template
         
     def set_mapping(self, mapping):
+        t = CardTemplate(self.get_template_name(), self.mapping)
+        mapping = dict((f,v) for (f,v) in mapping.items() if f in t.fields)
         for v in mapping.values():
             if v != '' and v not in self.factsheet.columns():
                 raise CardsetError('Mapping contains non-existent column name "%s".'%v)
@@ -308,6 +323,9 @@ class Box(db.Model):
             self.time_studied += diff
         self.last_studied = now
         self.put()
+        
+    def fetch_cardsets(self):
+        return Cardset.get_by_id(self.cardsets)
         
     def reschedule_card(self, card):
         """ Returns new date when card will be available """
@@ -484,22 +502,32 @@ class Card(db.Model):
         times, a, b, intervals, learned_until = zip(*history)
         chart.add_line(times, intervals, 'Interval')
         return {'interval':chart}
-         
-    def render(self):
-        # Fetch vars
-        factsheet     = self.get_cardset().factsheet
-        mapping       = yaml.load(self.get_cardset().mapping) #TODO Load yaml in cardset, not here
-        template_name = self.get_cardset().get_template_name()
-        row_id        = self.key().name().split('-',1)[1]
-        row           = factsheet.rows().get(row_id,None)
-        if factsheet is None:
-            return CardTemplate.render_error("Factsheet not found or empty.")
-        if row is None:
-            return CardTemplate.render_error("Card not found in factsheet.")
-        # Actual rendering
-        template = CardTemplate(template_name, mapping)
-        return template.render(row)
         
+    def template(self):
+        if not hasattr(self, '_template'):
+            factsheet      = self.get_cardset().factsheet
+            mapping        = yaml.load(self.get_cardset().mapping) #TODO Load yaml in cardset, not here
+            template_name  = self.get_cardset().get_template_name()
+            row_id         = self.key().name().split('-',1)[1]
+            row            = factsheet.rows().get(row_id,None)
+            self._template = CardTemplate()
+            if factsheet is None:
+                CardTemplate.error = "Factsheet not found or empty."
+                return
+            if row is None:
+                CardTemplate.error = "Card not found in factsheet."
+                return
+            # Actual rendering
+            self._template = CardTemplate(template_name, mapping)
+            self._template.set_content(row)
+        return self._template
+        
+    def render(self):
+        return self.template().render()
+    
+    def data(self):
+         return {'front':self.template().front_data,'back':self.template().back_data}
+
 class DailyBoxStats(db.Model):
     """ Keeps track of daily stats for parent box. """
     day          = db.DateProperty()
@@ -524,7 +552,7 @@ class CardTemplate(object):
             self.load(template_name)
         if mapping is not None:
             self.set_mapping(mapping)
-    
+
     def load(self,template_name):
         try:
             self.template_string = open('templates/cards/'+template_name+'.html').read()
@@ -534,10 +562,12 @@ class CardTemplate(object):
             self.fields          = self.front_fields | self.back_fields
             self.front_fields    = sorted(self.front_fields,key=lambda v: v[-1])
             self.back_fields     = sorted(self.back_fields,key=lambda v: v[-1])
+            self.back_fields     = [f for f in self.back_fields if f not in self.front_fields]
             self.error           = False
         except IOError:
             self.error           = "Template not found."
             self.template_string = None
+
     
     def set_mapping(self,mapping):
         self.mapping    = mapping
@@ -546,18 +576,20 @@ class CardTemplate(object):
         self.back_vars  = [v for v in self.back_vars if v not in self.front_vars]
         
     def set_content(self, row):
+        self.row = row
         self.front_data = [row[v] for v in self.front_vars if v in row]
         self.back_data  = [row[v] for v in self.back_vars if v in row]
         self.back_data  = [b for b in self.back_data if b not in self.front_data]
             
-    def render(self,row):
+    def render(self,row=None):
         if self.error:
             return self.render_error(self.error)
-        self.set_content(row)
+        if row:
+            self.set_content(row)
         base = dict((v,EMPTY_FIELD) for v in self.fields)
-        base.update(row) # This allows fields to be filled by their original name.
+        base.update(self.row) # This allows fields to be filled by their original name.
         # Update the values of the dict with the row's values.
-        base.update(((field, row[var]) for (field, var) in self.mapping.items() if var in row))
+        base.update(((field, self.row[var]) for (field, var) in self.mapping.items() if var in self.row))
         # Wrap all fields in a span with their ID
         for k in base.keys():
             base[k] = mark_safe('<span class="tfield tfield_%s" id="tfield_%s">%s</span>'%(k,k,encode_html(base[k])))

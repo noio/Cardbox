@@ -11,7 +11,7 @@
         <h4>This Card</h4>
         <p>Correct {{card.n_correct}} times, wrong {{card.n_wrong}} times. In <strong>interval {{card.interval}}</strong>.</p>
         <ul>
-            <li><a href='{{card.cardset.factsheet.url}}'>{{card.cardset.factsheet.title}}</a></li>
+            <li><a href='{{card.get_cardset.factsheet.url}}'>{{card.get_cardset.factsheet.title}}</a></li>
             <li><a href="{%url cardbox.views.card_view box.key.id card.key.name %}">Stats for this card</a></li>
         </ul>
     </div>

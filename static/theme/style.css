@@ -276,13 +276,8 @@ ul.cloud {
 .browser .button.action-remove { background-position: 50% -20px; }
 .browser .button.action-view { background-position: 50% -40px; }
 .browser .button.action-select { background-position: 50% -60px; }
-.cardset-component {
-  background: #ffffff;
-  border: 1px solid #aaaaaa;
-  padding: 10px;
-}
-.mapper .card .tfield { border: 2px dashed #333333; }
-.mapper .card .tfield.hovered {
+.cardset-editor .card .tfield { border: 2px dashed #333333; }
+.cardset-editor .card .tfield.hovered {
   border: 2px solid #666666;
   background: white;
   cursor: pointer;

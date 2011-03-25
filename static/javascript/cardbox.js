@@ -163,6 +163,12 @@ var CardsetEditor = new Class({
         this.setTemplate(this.element.getElement('input[name=cardset-template]').value);
         // Add element for the draggers, render contents dynamically later.
         new Element('div.draggers').inject(this.element.getElement('.card-container'),'before');
+        // Add event for template changes
+        var t = this;
+        this.element.getElement('input[name=cardset-template]').addEvent('change',function(event){
+            t.setTemplate(this.get('value'));
+            t.render();
+        });
         this.render();
     },
     
@@ -226,7 +232,7 @@ var CardsetEditor = new Class({
         var f = this.templateFields.front.map(function(f){return this.mapping[f]}.bind(this));
         var b = this.templateFields.back.map(function(f){return this.mapping[f]}.bind(this));
         b = b.filter(function(field){return !f.contains(field);});
-        f = f.pick()
+        f = f.pick();
         b = b.pick();
         // Set title only if current title empty or also autoset.
         var currentTitle = this.element.getElement('input[name=cardset-title]').get('value')
@@ -240,7 +246,7 @@ var CardsetEditor = new Class({
         return field.getProperty('class')
             .split(' ').filter(function(f){
                 return f.contains('tfield_')
-            })[0].split('_')[1];
+            })[0].replace('tfield_','');
     },
     
     setMapping: function(fieldName, varName){

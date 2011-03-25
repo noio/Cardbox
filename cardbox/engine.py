@@ -45,12 +45,11 @@ class Mapper(object):
         self.to_put_dict = {}
         self.to_delete = []
         self.next_mapper = next_mapper
-        self.ancestor = ancestor if isinstance(ancestor, db.Key) else ancestor.key()
+        self.ancestor = ancestor
 
     def map(self, entity):
-        """Updates a single entity.
-
-        Implementers should return a tuple containing two iterables (to_update, to_delete).
+        """ Updates a single entity.
+            Implementers should return a tuple containing two iterables (to_update, to_delete).
         """
         return ([], [])
 
@@ -136,6 +135,10 @@ def update_cards(card_ids, box):
     c = CardCleaner(card_ids=card_ids,ancestor=box)
     c.run()
 
+def clean_all_cards():
+    c = CardCleaner(card_ids=None, ancestor=None)
+    c.run()
+
 class CardCleaner(Mapper):
     """ Runs through all the cards in a given box (ancestor),
         and checks whether the card is still part of that box.
@@ -153,22 +156,21 @@ class CardCleaner(Mapper):
         box = card.parent()
         if box is None:
             return ([],[card])
+        if not self.ancestor:
+            return ([],[])
         a,b = card.key().name().split('-',1)
         id_tuple = (int(a),b)
-        if (id_tuple[0] not in box.cardsets) or (id_tuple not in self.card_ids):
-            if card.history == '':
+        if  id_tuple not in self.card_ids:
+            if (card.modified - datetime.datetime.now()).days > 30:
                 return ([],[card])
-            else: 
-                if (card.modified - datetime.datetime.now()).days > 30:
-                    return ([],[card])
+            elif card.enabled:
                 card.enabled = False
                 return ([card],[])
+            else:
+                return ([],[])
         else:
-            try:
-                card.enabled = True
-                self.card_ids.remove(id_tuple)
-            except ValueError:
-                logging.warning('CardCleaner %s was not found in %s'%(id_tuple,self.card_ids))
+            card.enabled = True
+            self.card_ids.remove(id_tuple)
             return ([card],[])
                 
     def finish(self):
@@ -179,7 +181,6 @@ class CardCleaner(Mapper):
             logging.info("CardCleaner finished. No cards to add.")
 
 
-                
 def create_cards(card_ids, box_key):
     """ Adds Card entities for the given ids, with the given parent.
         Adds in batches and re-queues itself. 

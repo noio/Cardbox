@@ -158,8 +158,8 @@ def box_edit(request, box_id=None):
                 box.cardsets.append(cid)
         if 'cardset-id' in request.POST:
             box.cardsets = [int(x) for x in request.POST.getlist('cardset-id') if x != '']
-        box.update_cards()
         box.put()
+        box.update_cards()
         if request.is_ajax():
             return HttpResponse('success')
         return HttpResponseRedirect(reverse('cardbox.views.frontpage'))

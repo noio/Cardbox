@@ -284,8 +284,8 @@ class Cardset(db.Model):
         self.template_name = template
         
     def set_mapping(self, mapping):
-        t = CardTemplate(self.get_template_name(), self.mapping)
-        mapping = dict((f,v) for (f,v) in mapping.items() if f in t.fields)
+        t = CardTemplate(self.get_template_name(), mapping)
+        mapping = dict((f,v) for (f,v) in mapping.items() if (f in t.fields and v != 'None'))
         for v in mapping.values():
             if v != '' and v not in self.factsheet.columns():
                 raise CardsetError('Mapping contains non-existent column name "%s".'%v)
@@ -665,9 +665,9 @@ class TimelineChart(object):
         legend = '|'.join([l['label'] for l in self.lines])
         colors = ','.join([l['color'] for l in self.lines])
         linestyle = '|'.join([str(l['thickness']) for l in self.lines])
-        labels = '|'.join([l[0].strftime('%b %d') for l in self.labels])
+        labels = '|'.join([l[0].strftime("%b %d %%27%y") for l in self.labels])
         label_positions = ','.join(['%.1f'%l[1] for l in self.labels])
-        max_val = max([max(l['data']) for l in self.lines])
+        max_val = max(0.1,max([max(l['data']) for l in self.lines]))
         ideal_spacing = (100/float(max_val)) * max(max_val//5.0,1)
         # Set parameters
         self.gcparams['cht']  = 'lxy'

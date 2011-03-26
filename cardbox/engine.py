@@ -213,7 +213,7 @@ def create_box_stats(for_box, days_back=10):
         td = datetime.timedelta(days=d)
         day = datetime.date.today() - td
         mapper = BoxStatsMapper(day, ancestor=for_box)
-        deferred.defer(mapper.run, _countdown = 60 * (d-1))
+        deferred.defer(mapper.run, _countdown = 6 * (d-1))
         
 class BoxStatsMapper(Mapper):
     

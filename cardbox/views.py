@@ -131,6 +131,8 @@ def list_edit(request, name):
                     cardset.put()
                 except models.CardsetError, e:
                     errors.append('Error in Cardset "%s"(%s) : %s'%(title, cid, str(e)))
+        if not errors:
+            return HttpResponseRedirect(reverse('cardbox.views.list_view',args=[name]))
         
     return respond(request, 'list_edit.html',{'list':factsheet,'errors':errors})
     

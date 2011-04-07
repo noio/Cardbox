@@ -83,10 +83,13 @@ def list_view(request, name):
     return respond(request, 'list_view.html',{'list':factsheet})
     
 @login_required
-def list_edit(request, name):
+def list_edit(request, name=None):
     LIST_HEADER_FORMAT = 'list-header-%d'
     LIST_CELL_FORMAT   = 'list-row-%d-col-%d'
-    factsheet = models.Factsheet.get_by_name(name)
+    if name is None:
+        factsheet = models.Factsheet()
+    else:
+        factsheet = models.Factsheet.get_by_name(name)
     errors = []
     if request.method == 'POST':
         # Extract columns and trim last column if unused
@@ -99,7 +102,13 @@ def list_edit(request, name):
             if any(row):
                 rows.append(row)
             i += 1
-            
+        try:
+            factsheet.set_title(request.POST['title'])
+            factsheet.set_columns_and_rows(columns, rows)
+            factsheet.save()
+            name = factsheet.name
+        except models.FactsheetError, e:
+            errors.append('Error in List: %s'%(str(e)))
         # Process cardset form
         if 'cardset-id' in request.POST:
             cids      = request.POST.getlist('cardset-id')
@@ -129,6 +138,8 @@ def list_edit(request, name):
     
 @login_required
 def list_create(request):
+    if request.method == 'POST':
+        return list_edit(request,None)
     factsheet = models.Factsheet()
     return respond(request, 'list_edit.html',{'list':factsheet})
     

@@ -128,7 +128,7 @@ class Factsheet(db.Model):
         if subject is not None:
             self.meta_subject = subject
     
-    def set_title(new_title):
+    def set_title(self, new_title):
         name       = title_to_name(new_title)
         if not re.match(VALID_FACTSHEET_NAME, name):
             raise FactsheetError("""Title (%s / %s) can only contain letters, numbers, and spaces.

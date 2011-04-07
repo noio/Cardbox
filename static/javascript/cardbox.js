@@ -44,7 +44,7 @@ var ListEditor = new Class({
     
     newRow: function(){
         var tr = new Element('tr');
-        var tds = this.table.getElements('th').map(function(th){return new Element('td')},this);
+        var tds = this.table.getElements('th:not(.button-cell)').map(function(th){return new Element('td')},this);
         return tr.adopt(tds);
     },
     
@@ -57,7 +57,13 @@ var ListEditor = new Class({
     },
     
     wrapCells: function(){
-        var cells = this.table.getElements('th,td');
+        var removedCells = this.table.getElements('tr.removed th,tr.removed td');
+        removedCells.each(function(cell){
+            if(cell.getElement('input')){
+                cell.set('html',cell.getElement('input').get('value'));
+            }
+        });
+        var cells = this.table.getElements('th:not(tr.removed *),td:not(tr.removed *)');
         cells.each(function(cell){
             if (!cell.getElement('input')){
                 var value = cell.get('html');
@@ -70,10 +76,11 @@ var ListEditor = new Class({
     },
     
     addButtons: function(){
-        this.table.getElements('a.button').destroy();
-        var lastheader = this.table.getElement('thead tr th:last-child');
+        this.table.getElements('th.button-cell, td.button-cell').destroy();
+        var firstheader = new Element('th.button-cell').inject(this.table.getElement('thead tr'),'top');
+        var lastheader = new Element('th.button-cell').inject(this.table.getElement('thead tr'),'bottom');
         var addColumn = new Element('a',{
-            'href':'#','class':'button add-column',
+            'href':'#','class':'button add-column', 'tabindex':9000,
             'events':{
                 'click':function(event){
                     event.preventDefault();
@@ -82,23 +89,22 @@ var ListEditor = new Class({
             }
         }).grab(new Element('span',{'class':'icon-add','html':'Add Column'}));
         lastheader.grab(addColumn);
-        var rows = this.table.getElements('tbody tr').slice(0,-1);
+        var rows = this.table.getElements('tbody tr')
         rows.each(function(row,i){
-            var first = row.getElement('td:first-child');
-            var last  = row.getElement('td:last-child');
+            var first = new Element('td.button-cell').inject(row,'top');
+            var last  = new Element('td.button-cell').inject(row,'bottom');
             var removeButton = Element('a',{
-                'href':'#', 'class':'button remove-row',
+                'href':'#', 'class':'button remove-row', 'tabindex':9000,
                 'events':{
                     'click':function(event){
                         event.preventDefault();
-                        new Fx.Tween(row, {'property':'opacity'}).start(1,0).chain(
-                            row.destroy.bind(row)
-                        );
-                    }
+                        row.toggleClass('removed');
+                        this.update();
+                    }.bind(this)
                 }
             }).grab(new Element('span',{'class':'icon-remove','html':'Remove Row'}));
             var addButton = new Element('a',{
-                'href':'#', 'class':'button add-row',
+                'href':'#', 'class':'button add-row', 'tabindex':9000,
                 'events':{
                     'click':function(event){
                         event.preventDefault();
@@ -107,8 +113,10 @@ var ListEditor = new Class({
                     }.bind(this)
                 }
             }).grab(new Element('span',{'class':'icon-add','html':'Add Row'}));
-            first.grab(removeButton,'top');
-            last.grab(addButton,'bottom');
+            if (i < rows.length - 1){
+                first.grab(removeButton);
+                last.grab(addButton);
+            }
         },this);
     },
     
@@ -118,7 +126,7 @@ var ListEditor = new Class({
         headers.each(function(header, i){
             header.getElement('input').setProperty('name', prefix+'-header-'+i)
         },this);
-        var rows = this.table.getElements('tbody tr');
+        var rows = this.table.getElements('tbody tr:not(.removed)');
         rows.each(function(row, i){
             var cells = row.getElements('td');
             cells.each(function(cell, j){
@@ -138,9 +146,9 @@ var ListEditor = new Class({
     },
     
     checkExpansion: function(){
-        var lastRow = this.table.getElements('tr').getLast().getElements('td')
+        var lastRow = this.table.getElements('tr').getLast().getElements('td');
         var lastRowUsed = lastRow.some(function(td){
-            return td.getElement('input').getProperty('value');
+            return (td.getElement('input') && td.getElement('input').getProperty('value'));
         });
         if (lastRowUsed) {
             this.newRow().inject(this.table.getElement('tbody')).fade('hide').fade('in');

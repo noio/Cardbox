@@ -99,15 +99,6 @@ def list_edit(request, name):
             if any(row):
                 rows.append(row)
             i += 1
-        # Extract meta
-        meta_book    = request.POST['list-meta-book'];
-        meta_subject = request.POST['list-meta-subject'];
-        try:
-            factsheet.set_meta(meta_book,meta_subject)
-            factsheet.set_columns_and_rows(columns,rows)
-            factsheet.save()
-        except models.FactsheetError, e:
-            errors.append(str(e))
             
         # Process cardset form
         if 'cardset-id' in request.POST:

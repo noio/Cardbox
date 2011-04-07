@@ -2,13 +2,18 @@
 
 
 {% block content %}
-    <div class="span-18">
+    <div class="span-8">
+        <a href="{%url cardbox.views.list_browse %}">Browse lists</a>
+    </div>
+    <div class="span-8">
+        <a href="{%url cardbox.views.list_create %}">Create list</a>
+    </div>
+    <div class="span-8 last">
         
         {% if request.user %}
-            <p>Welcome back!</p>
             <h3><span class='faded'>Your</span> Boxes</h3>
             {% for box in request.user.my_boxes %}
-                <div class="span-14 append 4">
+                <div class="span-8">
                     <div class='box-control'>
                         <div class='box-top'>
                             <h3><span class='item-icon box'></span>{{box.title}}</h3>
@@ -32,10 +37,5 @@
         {% endif %}
     </div>
     
-    <div class="span-6 last">
-        
-        <h4>Contact the Developer</h4>
-        <p>Have questions or requests? Feel free to send me a message.</p>
-        <iframe src="http://www.google.com/talk/service/badge/Show?tk=z01q6amlqvtlrqmhilf2s76154k46oqh2rhg14065fingmi5muanp6lavv3kcf96819kbsohqllit7dsqghgcr1vsun8pnj9q6hhvuq0e0hsk2ofk1om95lk97g6c2k1ndbtnu2ovllfq6r2n2tun4e7otpv56hra2al0segu&amp;w=200&amp;h=60" frameborder="0" allowtransparency="true" width="200" height="60"></iframe>
-    </div>
+   
 {% endblock %}

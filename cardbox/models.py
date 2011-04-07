@@ -33,6 +33,10 @@ RE_DJANGO_VARIABLE_TAG = re.compile(r'{{([a-z0-9_]+)}}')
 RE_CARD_FRONT          = re.compile('<!--FRONT-->(.*?)<!--/FRONT-->',re.S)
 RE_CARD_BACK           = re.compile('<!--BACK-->(.*?)<!--/BACK-->',re.S)
 
+RESERVED_TITLES      = ['create','tags','list','edit','view','cardset','cardbox','stats'] 
+VALID_CARDSET_TITLE  = r'^[a-z][\- a-z0-9]{4,49}$'
+VALID_FACTSHEET_NAME = r'^[a-z][\_a-z0-9]{4,49}$'
+
 ### Exceptions ###
 class FactsheetError(Exception):
     pass
@@ -126,11 +130,11 @@ class Factsheet(db.Model):
     
     def set_title(new_title):
         name       = title_to_name(new_title)
-        VALID_NAME = r'^[a-z][\_a-z0-9]{4,49}$'    
-        if not re.match(VALID_NAME, name):
+        if not re.match(VALID_FACTSHEET_NAME, name):
             raise FactsheetError("""Title (%s / %s) can only contain letters, numbers, and spaces.
-                                        It has to start with a letter, and it has to be between 5 and 50 letters long.
-                                     """%(new_title,name))
+                                    It has to start with a letter, and it has to be between 5 and 
+                                    50 letters long. Additionally, it cannot start with: %s.
+                                 """%(new_title,name,", ".join(RESERVED_TITLES)))
         other = Factsheet.all().filter('name', name).get()
         if other:
             raise FactsheetError(mark_safe("There is already a page with this title. ( <a href='%s'>%s</a> )"
@@ -272,10 +276,11 @@ class Cardset(db.Model):
         return o
         
     def set_title(self, title):
-        VALID_TITLE = r'^[a-z][\- a-z0-9]{4,49}$'    
-        if not re.match(VALID_TITLE, title.lower()):
+        reserved = [title.lower().startswith(r) for r in RESERVED_TITLES]
+        if any(reserved) or not re.match(VALID_CARDSET_TITLE, title.lower()):
             raise CardsetError("""Title (%s) must start with a letter. It can contain 
-                                  only letters, numbers, spaces, and dashes."""%title)
+                                  only letters, numbers, spaces, and dashes. Additionally,
+                                  it cannot start with any of the words: %s."""%(title,', '.join(RESERVED_TITLES)))
         self.title = title
         
     def set_template(self, template):

@@ -27,9 +27,7 @@
             {% endfor %}
         </ul>
    
-        <input type='text' name='list-meta-book' value='{{list.meta_book|default_if_none:""}}'>
-        <input type='text' name='list-meta-subject' value='{{list.meta_subject|default_if_none:""}}'>
-        <table class='list-view'>
+        <table class='list-editor'>
             {% for k in list.columns %}<col/>{% endfor %}
             <thead>
                 <tr>

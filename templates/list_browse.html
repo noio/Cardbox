@@ -2,18 +2,19 @@
 
 {% block content %}
   
-<div class='span-24' id='browser'>
-    <ul>
+<div class='span-24'>
+    <h2>Browsing Lists</h2>
+    <ul class='list-browser'>
     {% for list in lists %}
-        <li><a href="{{list.url}}">{{list.name}}</a>
-            <ul>
+        <li><h4>{{list.title}}</h4> <a class='button' href="{{list.url}}"><span class='icon-view'>View list</span></a>
+            <ul class='cardsets'>
                 {% for cardset in list.cardset_set %}
-                    <li class='cardset' id='cardset-{{cardset.key.id}}'>{{cardset.title}}
-                        {% for c in cardset.contents|slice:":3" %}
-                            {{c.front|first}}:{{c.back|first}}
-                        {%endfor%}
+                    <li class='cardset' id='cardset-{{cardset.key.id}}'><span class='cardset-title'>{{cardset.title}}</span>
+                        <span class='examples'>{% for c in cardset.contents|slice:":4" %}
+                            <span class='example-{{forloop.counter}}'>{{c.front|first}}: {{c.back|first|truncatewords:2}},</span>
+                        {%endfor%}<span class='example-4'>...</span></span>
+                        <a href='#' class='add-to-box button'><span class='icon-addto'>Add to</span> Add to box</a>
                     </li>
-                
                 {%endfor%}
             </ul>
         </li>
@@ -30,11 +31,10 @@
     <span class='success' style='display:none'>Success!</span>
     <a class='button action-cancel' href='#' onClick='hideBoxSelect(event)'>Cancel</a>
 </div>
+{% endif %}
+
 <script type='text/javascript'>
-    $('cardset-add-box-select').set('tween',{'property':'opacity'});
-    $$('#cardset-add-box-select .success')[0].set('tween',{'property':'opacity'});
-    $$('#cardset-add-box-select .action-cancel').set('tween',{'property':'opacity'});
-    hideBoxSelect();
+    var loggedIn = {{request.user|yesno:"true,false"}};
     
     function boxSelect(event, box){
         console.log('adding to ' + box)
@@ -76,19 +76,38 @@
         $$('#cardset-add-box-select .success').setStyle('display','none');
     }
     
-    $$('.cardset').each(function(c){
-        c.grab(new Element('a',{
-            'html':'add','class':'button action-add','href':'#',
-            'events':{
-                'click':function(event){
+    if (loggedIn){
+        $('cardset-add-box-select').set('tween',{'property':'opacity'});
+        $$('#cardset-add-box-select .success')[0].set('tween',{'property':'opacity'});
+        $$('#cardset-add-box-select .action-cancel').set('tween',{'property':'opacity'});
+        hideBoxSelect();
+    }
+    
+    
+    $$('.cardset .add-to-box').each(function(a){
+        if (loggedIn){
+            a.addEvent('click',
+                function(event){
+                    event.stopPropagation();
                     event.preventDefault();
-                    window.addedCardset = c.get('id').split('-')[1];
+                    window.addedCardset = a.getParent().get('id').split('-')[1];
                     showBoxSelect(this);
                 }
-            }}
-        ));
-    })
+            );
+        } else {
+            a.destroy();
+        }
+    });
+    
+    $$('.list-browser>li').each(function(li){
+        console.log(li)
+        var innerul = li.getElement('ul.cardsets');
+        $$('ul.cardsets').slide('hide');
+        li.addEvent('click', function(event){
+            $$('ul.cardsets').slide('out');
+            innerul.slide('toggle');
+        });
+    });
 </script>
-{% endif %}
 
 {% endblock %}

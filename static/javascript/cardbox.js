@@ -72,21 +72,22 @@ var ListEditor = new Class({
     addButtons: function(){
         this.table.getElements('a.button').destroy();
         var lastheader = this.table.getElement('thead tr th:last-child');
-        lastheader.grab(new Element('a',{
-            'html':'add column','href':'#','class':'button action-add',
+        var addColumn = new Element('a',{
+            'href':'#','class':'button add-column',
             'events':{
                 'click':function(event){
                     event.preventDefault();
                     this.addColumn();
                 }.bind(this)
             }
-        }));
+        }).grab(new Element('span',{'class':'icon-add','html':'Add Column'}));
+        lastheader.grab(addColumn);
         var rows = this.table.getElements('tbody tr').slice(0,-1);
         rows.each(function(row,i){
             var first = row.getElement('td:first-child');
             var last  = row.getElement('td:last-child');
             var removeButton = Element('a',{
-                'html':'remove', 'href':'#', 'class':'button action-remove',
+                'href':'#', 'class':'button remove-row',
                 'events':{
                     'click':function(event){
                         event.preventDefault();
@@ -95,9 +96,9 @@ var ListEditor = new Class({
                         );
                     }
                 }
-            });
+            }).grab(new Element('span',{'class':'icon-remove','html':'Remove Row'}));
             var addButton = new Element('a',{
-                'html':'add', 'href':'#', 'class':'button action-add',
+                'href':'#', 'class':'button add-row',
                 'events':{
                     'click':function(event){
                         event.preventDefault();
@@ -105,7 +106,7 @@ var ListEditor = new Class({
                         this.update();
                     }.bind(this)
                 }
-            });
+            }).grab(new Element('span',{'class':'icon-add','html':'Add Row'}));
             first.grab(removeButton,'top');
             last.grab(addButton,'bottom');
         },this);
@@ -276,112 +277,6 @@ var CardsetEditor = new Class({
     }
     
 });
-
-
-/**
- * Ribbon is an expanding navigation menu, using hierarchical 
- * horizontal bars.
- */
-var Ribbon = new Class({
-    Implements: [Options],
-    options:{
-        'delay':2000
-    },
-    
-    initialize: function(id, options){
-        this.navbar = $(id);
-        this.setOptions(options);
-        this.submenus = [];
-        this.navbar.getChildren('li').each(function(li, idx){
-            li.addClass('main');
-            li.getElement('a').addClass('main')
-            var ul = li.getElement('ul');
-            if (ul){
-                var div = new Element('div').inject(ul, 'before');
-                var submenu = new Element('div',{'class':'submenu'}).inject(div).grab(ul);
-                //Fix width of submenu
-                var totalWidth = 0;
-                ul.setStyle('width','1000px');
-                ul.getElements('li').each(function(innerLi,i2){
-                    var size = innerLi.getComputedSize({'styles':['padding','border','margin']})
-                    totalWidth += size.totalWidth;
-                });
-                ul.setStyle('width',null);
-                ulSize = ul.getComputedSize();
-                totalWidth += (ulSize['border-left-width'] + ulSize['border-right-width']);
-                totalWidth = Math.ceil(totalWidth+3);
-                div.position({
-                     'relativeTo':li,
-                     'position':'centerBottom',
-                     'edge':'centerTop'
-                });
-                div.setStyle('width',totalWidth+'px');
-                submenu.setStyle('width',totalWidth+'px');
-                //Set tweens
-                submenu.set('slide', {'duration':200});
-                submenu.set('tween', {'duration':200})
-                submenu.slide('hide');
-                this.submenus.push(submenu);
-                //Add events to open and close submenus
-                var anchors = li.getElements('a');
-                anchors.addEvent('mouseover',function(e){
-                    $(e.target).addClass('focused');
-                    this.open(submenu);
-                }.bind(this));
-                anchors.addEvent('mouseout',function(e){
-                    $(e.target).removeClass('focused');
-                    this.delayClose();
-                }.bind(this));
-            };
-        }.bind(this));
-        var navbarTips = new Tips(this.navbar.getElements('ul a'), {
-            'fixed':true,
-            'offset':{'x':0,'y':50},
-            'text':'',
-            'showDelay':400,
-            'hideDelay':0,
-            'onShow':function(tt,h){
-                tt.set('tween',{'duration':200});
-                tt.fade('hide');
-                tt.fade('in');
-            },
-            'onHide':function(tt,h){
-                tt.fade('hide');
-            }
-        });
-    },
-    
-    open: function(submenu){
-        this.submenus.each(function(sm,i){
-            if (sm == submenu && !sm.get('slide').open){
-                sm.slide('in');
-                sm.fade('in');
-            }
-            if (sm != submenu && sm.get('slide').open){
-                sm.slide('out');
-                sm.fade('out');
-            }
-        });
-        if (!!(this.timer)){
-            clearTimeout(this.timer);
-        }
-    },
-    
-    delayClose: function(){
-        if (!!(this.timer)){
-            clearTimeout(this.timer);
-        }
-        this.timer = this.closeAll.delay(this.options.delay, this);
-    },
-    
-    closeAll: function(){
-        this.submenus.each(function(s,i){
-            s.slide('out');
-            s.fade('out');
-        });
-    }
-})
-
 
 
 var StudyClient = new Class({

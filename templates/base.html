@@ -11,7 +11,6 @@
     <script src="{{media_url}}javascript/mootools-core-1.3.1.js" type="text/javascript" charset="utf-8"></script>
     <script src="{{media_url}}javascript/mootools-more-1.3.1.1.js" type="text/javascript" charset="utf-8"></script>
     <script src="{{media_url}}javascript/cardbox.js" type="text/javascript" charset="utf-8"></script>
-    <script src="{{media_url}}javascript/autocompleter.js" type="text/javascript" charset="utf-8"></script>
     
 </head>
 
@@ -22,34 +21,6 @@
         
             <div class='span-6'>
                 <h1><a href="/" id='logo'>cardbox</a></h1>
-            </div>
-    
-            <div class='span-12'>
-                <ul id='navbar'>
-                    <li><a href='#' onClick='return false;'>Create</a>
-                        <ul>
-                            <li><a title='Create a new box. A box holds the cards that you can study.' href="{% url cardbox.views.box_create %}"><span class='item-icon box'></span>Box</a></li>
-                            <li><a title='Create a new List. Lists contain the words that show up on cards.' href='{% url cardbox.views.list_create%}'><span class='item-icon list'></span>List</a></li>
-                        </ul>
-                    </li>
-                    <li><a href='#' onClick='return false;'>browse</a>
-                        <ul>
-                            <li><a title='Browse through all available lists.' href='{% url cardbox.views.list_browse%}'><span class='item-icon list'></span>Lists</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        {% if sign_in %}<a href="{{ sign_in }}">login</a>
-                        {% else %}<a href="{{ sign_out }}">logout</a>
-                        {% endif %}
-                    </li>
-                    <li>
-                        <a href="{% url cardbox.views.help %}">help</a>
-                    </li>
-                
-                     {%if is_admin %}
-                    
-                    {% endif %}
-                </ul>
             </div>
             {% endblock header %} 
         </div>
@@ -64,19 +35,5 @@
     <div id='footer'>
     </div>
     
-    <script type="text/javascript" >
-        window.addEvent('domready', function() {  
-            $$('#navbar a').addEvent('click',function(e){
-                if (e.target.get('href') != '#'){
-                    //Remove this stuff.
-                    window.location.href = e.target.get('href');
-                    window.location.reload(true)
-                }
-               
-            });          
-            var ribbon = new Ribbon('navbar');
-            //KeyBinder.setInterface('shortcuts'); 
-        });
-    </script>
 </body>
 </html>

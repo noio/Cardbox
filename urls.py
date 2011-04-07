@@ -8,10 +8,12 @@ urlpatterns = patterns('',
 
    (r"^$", "cardbox.views.frontpage"),
    (r"^help$","cardbox.views.help"),
+   (r"^list/$", "cardbox.views.list_browse"),
+   (r"^list/tags$", "cardbox.views.list_browse"),
    (r"^list/create","cardbox.views.list_create"),
-   (r"^list/(?P<name>[a-z]+:?[a-z0-9\_]+)/view$", "cardbox.views.list_view"),
-   (r"^list/(?P<name>[a-z]+:?[a-z0-9\_]+)/edit$", "cardbox.views.list_edit"),
-   (r"^list/all/browse$", "cardbox.views.list_browse"),
+   (r"^list/(?P<name>[a-z0-9\_]+)$", "cardbox.views.list_view"),
+   (r"^list/(?P<name>[a-z0-9\_]+)/edit$", "cardbox.views.list_edit"),
+  
    
    (r"^box/create$","cardbox.views.box_create"),
    (r"^box/([0-9]+)/$","cardbox.views.box_edit"),

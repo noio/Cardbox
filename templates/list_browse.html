@@ -11,7 +11,7 @@
                 {% for cardset in list.cardset_set %}
                     <li class='cardset' id='cardset-{{cardset.key.id}}'><span class='cardset-title'>{{cardset.title}}</span>
                         <span class='examples'>{% for c in cardset.contents|slice:":4" %}
-                            <span class='example-{{forloop.counter}}'>{{c.front|first}}: {{c.back|first|truncatewords:2}},</span>
+                            <span class='example-{{forloop.counter}}'>{{c.front|first}}: {{c.back|first}},</span>
                         {%endfor%}<span class='example-4'>...</span></span>
                         <a href='#' class='add-to-box button'><span class='icon-addto'>Add to</span> Add to box</a>
                     </li>

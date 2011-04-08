@@ -2,32 +2,36 @@
 
 
 {% block content %}
-    <div class="span-8">
-        <a href="{%url cardbox.views.list_browse %}">Browse lists</a>
+    <div class="span-13 colborder">
+        Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+        <hr class='space'>
+        <div class='span-11 prepend-1 browse-lists'>
+            <a class='button-large' href="{%url cardbox.views.list_browse %}"><span>Browse Lists</span></a>
+            Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        </div>
+        <div class='span-11 prepend-1 create-list'>
+            <a class='button-large' href="{%url cardbox.views.list_create %}"><span>Create List</span></a>
+            Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        </div>
+
     </div>
-    <div class="span-8">
-        <a href="{%url cardbox.views.list_create %}">Create list</a>
-    </div>
-    <div class="span-8 last">
-        
+    <div class="span-10 last">
+        <span class='welcome-button-boxes'></span>
         {% if request.user %}
-            <h3><span class='faded'>Your</span> Boxes</h3>
+            <h3>Your Boxes</h3>
             {% for box in request.user.my_boxes %}
-                <div class="span-8">
+                <div class="span-10">
                     <div class='box-control'>
-                        <div class='box-top'>
-                            <h3><span class='item-icon box'></span>{{box.title}}</h3>
+                        <div class='box-top clearfix'>
+                            <h3><span class='icon-box'></span>{{box.title}}</h3>
                             <div class='progress'>
                                 <span>{{box.stats.n_learned}}/{{box.stats.n_cards}} =</span>
                                 <h3>{{box.stats.percent_learned|floatformat}}%</h3>
                             </div>
                         </div>
-                        <div class='box-divider'></div>
-                        <ul class='button-bar'>
-                            <li class='button-study'><a href="{% url cardbox.views.study box.key.id %}"><span class='icon'></span>study</a></li>
-                            <li class='button-edit'><a href="{% url cardbox.views.box_edit box.key.id %}"><span class='icon'></span>edit</a></li>
-                            <li class='button-stats'><a href="{% url cardbox.views.box_stats box.key.id %}"><span class='icon'></span>stats</a></li>
-                        </ul>
+                        <a class='button' href="{% url cardbox.views.study box.key.id %}"><span class='icon-study'>s</span>study</a>
+                        <a class='button' href="{% url cardbox.views.box_edit box.key.id %}"><span class='icon-edit'>e</span>edit</a>
+                        <a class='button' href="{% url cardbox.views.box_stats box.key.id %}"><span class='icon-stats'>s</span>stats</a>
                     </div>
                 </div>
                 <hr class='space'/>

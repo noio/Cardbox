@@ -91,15 +91,18 @@
         </form>
         {# New (prototype) cardset editor #}
         <div id='new-cardset-editor' class='cardset-editor boxed clearfix' style='display:none'>
-            <input type='text' name='cardset-title' value=''>
-            <input type='hidden' name='cardset-template' value='default'>
+            <h3><span class='icon-cardset'>c</span><input type='text' name='cardset-title' value=''></h3>
+            <a class='button pick-template' href='#'>Pick template</a>
+            {# <input type='hidden' name='cardset-template' value='{{cardset.get_template_name}}'> #}
             <input type='hidden' name='cardset-id' value='_new'>
             <input type='hidden' name='cardset-mapping' value='{}'>
             <div class='template-selector clearfix'>
                 {% for t in templates %}
                     <div class='template'>
-                        <input id="{{t.template_name}}" type="radio" name="cardset-template" value="{{t.template_name}}" {% ifequal t.template_name cardset.get_template_name %}checked="checked"{%endifequal%}/>
-                        <label for="{{t.template_name}}">{{t.render_icon}}</label>
+                        <input type="radio" name="cardset-template" 
+                               value="{{t.template_name}}" 
+                               {% ifequal t.template_name "default" %}checked="checked"{%endifequal%}/>
+                        <label><a href='#'>{{t.render_icon}}</a></label>
                     </div>
                 {% endfor %}
             </div>

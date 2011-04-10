@@ -96,8 +96,8 @@ class Factsheet(db.Model):
     editor          = db.UserProperty(auto_current_user=True)
     revision_number = db.IntegerProperty(default=1)
     
-    meta_subject = db.StringProperty()
-    meta_book    = db.StringProperty()
+    meta_subject = db.StringProperty() # TODO: REMOVE FROM DATASTORE
+    meta_book    = db.StringProperty() # TODO: REMOVE FROM DATASTORE
     
     @classmethod
     def get_by_name(cls, name):
@@ -241,7 +241,7 @@ class Cardset(db.Model):
     modified      = db.DateTimeProperty(auto_now=True)
     public        = db.BooleanProperty(default=True)
     factsheet     = db.ReferenceProperty(Factsheet)
-    template      = db.ReferenceProperty(Template)
+    template      = db.ReferenceProperty(Template) #TODO: REMOVE FROM DATASTORE
     template_name = db.StringProperty(default='default')
     mapping       = db.TextProperty(default='')
         
@@ -310,7 +310,7 @@ class Box(db.Model):
     owner        = db.UserProperty(auto_current_user_add=True)
     modified     = db.DateTimeProperty(auto_now=True)
     cardsets     = db.ListProperty(int)
-    scheduler    = db.ReferenceProperty(Scheduler)
+    scheduler    = db.ReferenceProperty(Scheduler) # TODO: REMOVE FROM DATASTORE
     last_studied = db.DateTimeProperty(default=datetime.datetime(2010,1,1))
     time_studied = TimeDeltaProperty(default=datetime.timedelta(0))
     

@@ -146,10 +146,7 @@ def list_edit(request, name=None):
     
 @login_required
 def list_create(request):
-    if request.method == 'POST':
-        return list_edit(request,None)
-    factsheet = models.Factsheet()
-    return respond(request, 'list_edit.html',{'list':factsheet})
+    return list_edit(request,None)
     
 def list_browse(request):
     return respond(request, 'list_browse.html', {'lists':models.Factsheet.all()})

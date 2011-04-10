@@ -17,10 +17,10 @@
     </div>
     
     <div class='box-info' style='display:none'>
-        <p>Studied for <strong>{{box.time_studied|timedelta}}</strong></p>
         <div class='progress'>
-            <h3>Cards: {{box.stats.n_cards}}</h3>
-            
+            <span>{{box.stats.n_learned}}/{{box.stats.n_cards}} =</span>
+            <h3>{{box.stats.percent_learned|floatformat}}%</h3>
+            <div class='bar'><div class='filled' style="width:{{box.stats.percent_learned|floatformat}}%"></div></div>
         </div>
     </div>
 </div>

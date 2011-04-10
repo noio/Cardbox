@@ -4,12 +4,9 @@
 
 {% block content %}
     <div class="span-24">
-        <div class='page-head'>
-            <span class='item-icon list'></span>
-            <h3><span class='faded'>Viewing list:</span> {{list.title}}</h3>
-            <div class='button-bar standalone'>
-                <a class='button-edit' href="{% url cardbox.views.list_edit name=list.name %}"><span class='icon'></span>edit</a>
-            </div>
+        <div class='page-head boxed'>
+            <h3><span class='icon-list'>list</span>{{list.title}}</h3>
+            <a class='button' href="{% url cardbox.views.list_edit name=list.name %}"><span class='icon-edit'>e</span>Edit</a>
         </div>
         <hr class='space'/>
 
@@ -37,7 +34,11 @@
     </div>   
     <div id='cardsets' class='span-24'>
         {% for cardset in list.cardset_set %}
-            <div class='splitview'>{{cardset.sample}}</div>
+            <div class='boxed clearfix'>
+                <div class='cards-split clearfix'>
+                {{cardset.sample}}
+                </div>
+            </div>
         {% endfor %}
     <div>
 {% endblock %}

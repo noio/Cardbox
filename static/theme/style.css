@@ -1,73 +1,13 @@
 
 #footer { padding-bottom: 3em; }
 
-body {
-  background: #f0f0f0;
-  color: #403c3b;
-}
-a         { color: #315875; }
-a:hover   { color: #000000;}
 th {
   background: #ffffff;
   font-weight: bold;
   border-bottom: 2px solid #666666;
 }
-.table-tr-odd { background: #f6f6f6; }
-ul.cloud {
-  padding: 0;
-  list-style: none;
-}
 
-.item-icon {
-  width: 40px;
-  height: 40px;
-  display: inline-block;
-  margin-right: 10px;
-  background: url('icons-items.png');
-  vertical-align: -35%;
-}
-.item-icon.box { background-position: 0 0; }
-.item-icon.cardset { background-position: 0 -40px; }
-.item-icon.list { background-position: 0 -80px; }
-.item-icon.template { background-position: 0 -120px; }
 
-.progress {
-  padding: 8px 10px 10px;
-  background: #575757;
-  color: white;
-}
-.progress h3 {
-  color: white;
-  margin-bottom: 0;
-}
-.progress span {
-  float: left;
-  display: block;
-  padding-right: 10px;
-}
-
-.page-head {
-  padding: 10px;
-  margin-bottom: 1em;
-  height: 42px;
-  background: #f5f5f5;
-  border: 1px solid #aaaaaa;
-}
-.page-head .button-bar { float: right; }
-.page-head h3 {
-  display: inline-block;
-  margin: 0.5em 0;
-}
-.page-head input {
-  font-size: 1.5em;
-  margin: 0.15em;
-}
-.cardset-editor .card .tfield { border: 2px dashed #333333; }
-.cardset-editor .card .tfield.hovered {
-  border: 2px solid #666666;
-  background: white;
-  cursor: pointer;
-}
 #shortcuts ul {
   list-style: none;
   margin: 0;
@@ -76,64 +16,22 @@ ul.cloud {
   float: right;
   color: #986f4f;
 }
-.key {
-  padding: 0 3px;
-  margin: 0 4px;
-  -moz-border-radius: 3px;
-  -webkit-border-radius: 3px;
-  border-radius: 3px;
-  color: #986f4f;
-  background: #ffffff;
-}
-.card { width: 470px; }
-.card .front {
-  border: 2px solid #666666;
-  height: 210px;
-  width: 426px;
-  padding: 20px;
-}
-.card .back {
-  border: 2px solid #666666;
-  height: 210px;
-  width: 426px;
-  padding: 20px;
-}
-.card p.flip { text-align: right; }
-.splitview .card { width: 100%; }
-.splitview .card div.front { float: left; }
-.splitview .card div.back { float: left; }
-.splitview .card div.front { margin-right: 10px; }
-.card-data { margin-bottom: 4px; }
-.card-data .front {
-  display: inline-block;
-  height: 100%;
-  padding: 0 3px;
-  margin-right: 3px;
-  background: #fff9cc;
-  border: 1px solid #ccc699;
-}
-.button-wrong, .button-correct {
-  display: block;
-  float: left;
-  width: 100px;
-  padding: 7px 0;
-  text-align: center;
-  border: 1px solid #666666;
-}
-.button-wrong { float: right; }
-.cardstack ul {
-  margin: 0;
-  padding: 0;
-}
-.cardstack li {
-  list-style: none;
-  float: left;
-  width: 32px;
-  height: 20px;
-  margin: 3px;
-  background: #fff9cc;
-  border: 1px solid #ccc699;
-}
+
+
+
+
+/***************
+ GENERAL STYLES
+***************/
+body          { background: #f0f0f0; color: #403c3b; }
+
+a             { color: #315875; }
+a:hover       { color: #000000;}
+h3 a          { text-decoration: none; text-shadow: 1px 1px 0px #fff; margin-left: 1em;}
+
+.boxed        { padding: 10px; border-bottom: 3px solid #ccc; background: #f8f8f8; margin-bottom: 1em;}
+.boxed h3     { margin-bottom: 0px; display: inline-block;}
+.boxed h3 input { font-size: 1em; border: none; border-top: 2px solid #ccc; margin: 0 10px 0;}
 
 /********* 
  ELEMENTS 
@@ -142,58 +40,116 @@ ul.cloud {
 /* HEADER */
 #header       { height: 100px; width: 100%; margin: 1.5em 0 3em; }
 #header h1    { margin: 0; }
-#logo         { display: block; text-indent: -9999px; height: 100px; width: 460px;
-                background: url('logo.png') no-repeat center; margin: 0px;}
+#logo         { display: block; text-indent: -9999px; height: 100px; width: 600px;
+                background: url('logo.png') no-repeat center; margin: 0px auto;}
+                
+/* MODAL BOX */
+.overlay      { width: 100%; height: 100%; background: #514E48; opacity: 0.5; position: fixed; top: 0; left: 0;}
+.modal        { width: 100%; position: fixed; top: 100px;}
+.modal .inner { width: 400px; margin:auto;}
+
+/* BUTTONS */
+.button                   { text-decoration: none; font-weight: bold; line-height: 24px;}
 
 /* FRONT PAGE */
 .browse-lists     { background: url('front-browse.png') no-repeat top left; padding-left: 110px;}
 .create-list      { background: url('front-create.png') no-repeat top left; padding-left: 110px;}
 
-.box-control h3   { float: left; margin-bottom: 0; }
+.box-control h3        { float: left; margin-bottom: 0; }
 .box-control .box-top  { margin: 0 0 10px;}
 .box-control .progress { float: right; }
 .box-control .button   { margin: 5px;}
 
+.progress         { padding: 0; background: #575757; color: white; }
+.progress h3      { color: white; margin: 9px 10px 12px 0;}
+.progress span    { float: left;  display: block; margin: 9px 10px 12px ;}
+.progress .bar    { clear: both; height: 6px; background: #EC3319; }
+.progress .bar .filled {height: 6px; background: #00DA55;}
 
 /* LIST BROWSER */
 
 .list-browser             { list-style: none; margin: 0; padding: 0;}
 .list-browser li          { margin: 0; padding: 4px 32px; cursor: pointer; line-height: 24px; 
                             background: url('bullet-plus.png') no-repeat 4px 8px;}
-.list-browser li:hover    { background-color: #ccc;}
+.list-browser li:hover    { background-color: #e0e0e0;}
 .list-browser li ul       { list-style: none; margin: 0; padding: 0;}
 .list-browser li ul li    { background: url('bullet-tee.png') no-repeat 4px 8px; }
 .list-browser li ul li:last-child {background: url('bullet-last.png') no-repeat 4px 8px; }
 
 .list-browser li h4       { display: inline;}
-.list-browser .cardset-title{font-weight: bold; display}
-.list-browser .examples   { margin-left: 40px; width: 440px; vertical-align: top; display: inline-block;}
-.list-browser .example-1  { color: #333;}
-.list-browser .example-2  { color: #666;}
-.list-browser .example-3  { color: #888;}
-.list-browser .example-4  { color: #aaa;}
+.cardset .cardset-title{ font-weight: bold; display}
+.cardset .examples   { margin-left: 20px; width: 440px; vertical-align: top; display: inline-block;}
+.cardset .example-1  { color: #333;}
+.cardset .example-2  { color: #666;}
+.cardset .example-3  { color: #888;}
+.cardset .example-4  { color: #aaa;}
+
+#cardset-add-box-select   { display: block; width: 250px; }
+#cardset-add-box-select h4{ margin-bottom: 0.5em;}
+#cardset-add-box-select .button { padding: 4px; margin: 4px; background: #e0e0e0; display: block; float: left;}
+
+/* EDITING PAGES GENERAL */
+.page-head input          { font-size: 1em; border: none; border-top: 2px solid #ccc; width: 560px; margin: 0 10px 0;}
+.page-head h3             { display: inline-block; margin: 0;}
+.page-head .button        { margin: 0 10px; vertical-align: 2px;}
+
+/* CARDS GENERAL */
+.cards-split              { clear: both; float: left; width: 100%; overflow: hidden; }
+.cards-split .front, .cards-split .back   { float: left; margin: 10px; position: relative; right: 50%;}
+.cards-split .card        { float: left; position: relative; left: 50%; clear: both;}
+
+/* LIST VIEW */
+
+/* BOX_EDITOR */
+#selected-cardsets        { margin: 0; padding: 0;}
+#selected-cardsets li     { list-style: none; margin: 5px 20px; }
+#selected-cardsets li .button { float: right; }
 
 /* LIST EDITOR */
 .list-editor              { border-collapse: collapse;}
-.list-editor th, .list-editor td{padding: 1px; border: 1px solid #ccc; background: white;}
+.list-editor th, .list-editor td{padding: 1px; border-bottom: 1px solid #ccc; background: white; font-size: 1em;}
 .list-editor th           { border-bottom: 2px solid #aaa;}
-.list-editor input        { width: 99.9%; height: 24px; font-size: 1em; margin: 0;
+.list-editor input        { width: 100%; height: 24px; font-size: inherit; margin: 0;
                             border: none; background: white;}
 .list-editor th input     { font-weight: bold;}
 .list-editor .button-cell { width: 24px; background: none; border: none;}
 .list-editor .button-cell * {visibility: hidden;}
 .list-editor tr:hover .button-cell * {visibility: visible;}
-.list-editor tr.removed   {text-decoration: line-through;}
+.list-editor tr.removed input {text-decoration: line-through; color: #ccc; background: url('striketrough.png') white;}
 
-/* BUTTONS */
-.button                   { text-decoration: none; font-weight: bold; height: 24px; }
-.button-large             { display: block; margin: 0.5em; padding: 0 0.5em;
-                            font-size: 1.75em; text-decoration: none; text-shadow: 1px 1px 0px #fff;}                           
+.dragger                  { float: left; margin: 5px; padding: 0 4px 0 0; 
+                            cursor: pointer; background: #ccc; border-bottom: 3px solid #999;}
+.cardset-editor .mapping, .dragger .mapping { background: #3380AF; border-bottom: 3px solid #29668C; 
+                            color: #F8F8F8; font-size: 12px; line-height: 14px; text-transform: uppercase;
+                            height: 16px; padding: 4px 4px 3px; margin: 0 4px 0 0;}
+.cardset-editor .tfield   { border: 2px solid #3380AF; padding: 4px; position: relative; border-radius: 3px;}
+.cardset-editor .tfield.empty { border: 2px dashed #3380AF; opacity: 0.5;}
+.cardset-editor .card .mapping { position: absolute; top: -2px; left: 100%; white-space: pre;}
+
+.template-selector .template { float: left; margin: 10px; cursor: pointer;}
+.template-selector .template input {vertical-align: 36px;}
+.template-selector .template .card {display: inline-block;}
+
+/* STUDYING */
+#study-area .front, #study-area .back { margin: auto; }
+#study-area .buttons      { margin: 10px 0 20px;}
+#study-area .correct      { float: left; padding: 4px;}
+#study-area .wrong        { float: right; padding: 4px;}
+.box-info                 { float: right;}
+.box-info .progress       { float: right; }
+
 
 /* ICONS */
-.icon-addto, .icon-view, .icon-add, .icon-remove, .icon-study, .icon-edit, .icon-stats
+.icon-x                   { background: url('icons.png'); display:inline-block; text-indent: -9999px;
+                            vertical-align: 2px; height: 16px; width: 16px; }
+.icon-addto, .icon-view, .icon-add, .icon-remove, .icon-study, .icon-edit, .icon-stats, 
+.icon-cancel, .icon-wait, .icon-success, .icon-save, .icon-trash, .icon-undo, 
+.icon-correct, .icon-wrong, .icon-clock
                           { background: url('icons.png'); display:inline-block; text-indent: -9999px;
-                            margin: 0 2px; height: 24px; width: 24px; vertical-align: 1px;}
+                            margin: 0 2px; height: 24px; width: 24px; }
+.icon-box, .icon-list,.icon-cardset
+                          { background: url('icons.png'); display:inline-block; text-indent: -9999px;
+                            margin: 0 6px; height: 48px; width: 48px; vertical-align: 14px; }
 .icon-addto               { background-position: 0px 0px;}
 a:hover .icon-addto       { background-position: -24px 0px;}
 .icon-view                { background-position: 0px -24px;}
@@ -208,7 +164,24 @@ a:hover .icon-study       { background-position: -24px -96px;}
 a:hover .icon-edit        { background-position: -24px -120px;}
 .icon-stats               { background-position: 0px -144px;}
 a:hover .icon-stats       { background-position: -24px -144px;}
-
-.icon-box                 { background: url('icons.png'); display:inline-block; text-indent: -9999px;
-  margin: 0 6px; height: 48px; width: 48px; vertical-align: -16px;}
+.icon-cancel              { background-position: 0px -168px;}
+a:hover .icon-cancel      { background-position: -24px -168px;}
+.icon-success             { background-position: -24px -192px;}
+.icon-save                { background-position: 0px -216px;}
+a:hover .icon-save        { background-position: -24px -216px;}
+.icon-trash               { background-position: 0px -240px;}
+a:hover .icon-trash       { background-position: -24px -240px;}
+.icon-undo                { background-position: 0px -264px;}
+a:hover .icon-undo        { background-position: -24px -264px;}
+.icon-correct             { background-position: 0px -288px;}
+a:hover .icon-correct     { background-position: -24px -288px;}
+.icon-wrong               { background-position: 0px -312px;}
+a:hover .icon-wrong       { background-position: -24px -312px;}
+.icon-clock               { background-position: -24px -336px;}
+.icon-wait                { background: url('spinner.gif');}
+.icon-x                   { background-position: -48px -48px; }
+a:hover .icon-x           { background-position: -64px -48px; }
 .icon-box                 { background-position: -48px 0px;}
+.icon-list                { background-position: -48px -64px;}
+.icon-cardset             { background-position: -48px -112px;}
+

@@ -38,6 +38,8 @@ import yaml
 # Local Imports
 import models
 
+### Constants ###
+NEW_TEMPLATES = [models.CardTemplate(n) for n in ['default','large_centered']]
 
 ### Decorators for Request Handlers ###
 
@@ -82,6 +84,7 @@ def list_view(request, name):
     factsheet = models.Factsheet.get_by_name(name)
     return respond(request, 'list_view.html',{'list':factsheet})
     
+    
 @login_required
 def list_edit(request, name=None):
     LIST_HEADER_FORMAT = 'list-header-%d'
@@ -96,9 +99,12 @@ def list_edit(request, name=None):
         columns = [request.POST[LIST_HEADER_FORMAT%v] for v in range(10) if LIST_HEADER_FORMAT%v in request.POST]
         columns = columns if columns[-1] else columns[:-1]
         # Extract rows
+        logging.info(request.POST)
         i, rows = 0, []
+        logging.info(LIST_CELL_FORMAT%(i,0))
         while LIST_CELL_FORMAT%(i,0) in request.POST:
             row = [request.POST[LIST_CELL_FORMAT%(i,j)] for j in xrange(len(columns))]
+            logging.info(row)
             if any(row):
                 rows.append(row)
             i += 1
@@ -115,6 +121,8 @@ def list_edit(request, name=None):
             mappings  = request.POST.getlist('cardset-mapping')
             templates = request.POST.getlist('cardset-template')
             titles    = request.POST.getlist('cardset-title')
+            logging.info(mappings)
+            logging.info(templates)
             for cid, mapping, template, title in zip(cids, mappings, templates, titles):
                 # Check if an existing set is edited
                 if cid.isdigit():
@@ -134,7 +142,7 @@ def list_edit(request, name=None):
         if not errors:
             return HttpResponseRedirect(reverse('cardbox.views.list_view',args=[name]))
         
-    return respond(request, 'list_edit.html',{'list':factsheet,'errors':errors})
+    return respond(request, 'list_edit.html',{'list':factsheet,'errors':errors,'templates':NEW_TEMPLATES})
     
 @login_required
 def list_create(request):
@@ -212,6 +220,9 @@ def card_view(request, box_id, card_id):
     card = models.Card.get_by_key_name(card_id, parent=box)
     return respond(request, 'card_view.html', {'card':card})
     
+def templates(request):
+    return respond(request, 'templates.html',{'templates':NEW_TEMPLATES})
+            
 def template_view(request, template_name):
     return HttpResponse(models.CardTemplate(template_name).render_fields())
     

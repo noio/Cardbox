@@ -1,0 +1,5 @@
+{% for template in templates %}
+    <div class='template' id='template_{{template.template_name}}'>
+        {{template.render_icon}}
+    </div>
+{% endfor %}

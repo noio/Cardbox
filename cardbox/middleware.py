@@ -2,6 +2,7 @@
 
 # Python Imports
 import hashlib
+import logging
 
 # AppEngine imports
 from google.appengine.api import users
@@ -21,6 +22,7 @@ class AddUserToRequestMiddleware(object):
     google_user = users.get_current_user()
     account = None
     is_admin = False
+    logging.info(request.META['HTTP_USER_AGENT'])
     if google_user:
         #Check if the user already has a site profile
         user_id = google_user.user_id()

@@ -1,20 +1,30 @@
 {% extends "base.html" %}
 {# TODO Template mooier maken #}
 {% block content %}
-    <div class="span-24"><h3>Studying from &laquo;{{box.title}}&raquo;</h3></div>
     <div class="span-24" id='study-area'>
-        <div class='span-12 append-1'>
-            <div class='card-container span-12 last'></div>
-            <div class='buttons span-12 last'></div>
+        <div class='span-24'>
+            <div class='span-12 prepend-6 card-container'>
+            </div>
+            <div class='span-14 prepend-5 buttons clearfix'>
+                <a class='button correct' href='#'><span class='icon-correct'>c</span>Correct</a>
+                <a class='button wrong' href='#'>Wrong<span class='icon-wrong'>w</span></a>
+            </div>
         </div>
         
-        <div class='span-6'>
+        
+        <div class="span-24 ">
+            <div class='boxed'>
+                <h3><span class='icon-box'>box</span> {{box.title}}</h3>
+                <div class='box-info'></div>
+            </div>
+        </div>
+        <span class='span-6' style='display:none;'>
             <div class='card-info span-6 last'></div>
             <div id='stackview' class='cardstack span-6 last'></div>
-        </div>
+        </span>
         
-        <div class='box-info span-5 last'></div>
     </div>
+        
     <script type='text/javascript'>
         window.addEvent('domready',function(){
             var studyClient = new StudyClient('study-area',{{box.key.id}},{'stackview':$('stackview')});

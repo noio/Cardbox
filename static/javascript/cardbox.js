@@ -1,5 +1,6 @@
-/** CLASSES **/
+//TODO: Name suggestion broken?
 
+/** CLASSES **/
 
 /** Table for editing list values. Automatically expands
     when all rows have been used.
@@ -27,11 +28,14 @@ var ListEditor = new Class({
     },
     
     getRows: function(){
-        rows = [];
-        columns = this.getColumnNames();
-        this.table.getElements('tbody tr').each(function(tr){
-            var row = tr.getElements('td input').get('value');
-            rows.push(row.associate(columns));
+        var rows    = [];
+        var columns = this.getColumnNames();
+        var trs     = this.table.getElements('tbody tr:not(.removed)')
+        trs.each(function(tr,i){
+            if (i < trs.length - 1){
+                var row = tr.getElements('td input').get('value');
+                rows.push(row.associate(columns));
+            }
         });
         return rows;
     },
@@ -63,11 +67,14 @@ var ListEditor = new Class({
                 cell.set('html',cell.getElement('input').get('value'));
             }
         });
-        var cells = this.table.getElements('th:not(tr.removed *),td:not(tr.removed *)');
+        var cells = this.table.getElements('th,td');
         cells.each(function(cell){
             if (!cell.getElement('input')){
                 var value = cell.get('html');
-                var input = new Element('input',{type:'text', value:value})
+                var input = new Element('input',{type:'text', value:value});
+                if (cell.getParent('.removed')){
+                    input.set('readonly',"readonly");
+                }
                 input.addEvent('change',this.checkExpansion.bind(this));
                 cell.empty();
                 cell.adopt(input);
@@ -84,33 +91,36 @@ var ListEditor = new Class({
             'events':{
                 'click':function(event){
                     event.preventDefault();
-                    this.addColumn();
-                }.bind(this)
+                    editor.addColumn();
+                }
             }
         }).grab(new Element('span',{'class':'icon-add','html':'Add Column'}));
         lastheader.grab(addColumn);
         var rows = this.table.getElements('tbody tr')
+        var editor = this;
         rows.each(function(row,i){
             var first = new Element('td.button-cell').inject(row,'top');
             var last  = new Element('td.button-cell').inject(row,'bottom');
+            var removeIcon = new Element('span',{'class':(row.hasClass('removed')?'icon-undo':'icon-remove'),'html':'r'});
+            
             var removeButton = Element('a',{
                 'href':'#', 'class':'button remove-row', 'tabindex':9000,
                 'events':{
                     'click':function(event){
                         event.preventDefault();
                         row.toggleClass('removed');
-                        this.update();
-                    }.bind(this)
+                        editor.update();
+                    }
                 }
-            }).grab(new Element('span',{'class':'icon-remove','html':'Remove Row'}));
+            }).grab(removeIcon);
             var addButton = new Element('a',{
                 'href':'#', 'class':'button add-row', 'tabindex':9000,
                 'events':{
                     'click':function(event){
                         event.preventDefault();
-                        this.newRow().inject(row,'before').fade('hide').fade('in');
-                        this.update();
-                    }.bind(this)
+                        editor.newRow().inject(row,'before').fade('hide').fade('in');
+                        editor.update();
+                    }
                 }
             }).grab(new Element('span',{'class':'icon-add','html':'Add Row'}));
             if (i < rows.length - 1){
@@ -128,7 +138,7 @@ var ListEditor = new Class({
         },this);
         var rows = this.table.getElements('tbody tr:not(.removed)');
         rows.each(function(row, i){
-            var cells = row.getElements('td');
+            var cells = row.getElements('td:not(.button-cell)');
             cells.each(function(cell, j){
                 cell.getElement('input').setProperty('name', prefix+'-row-'+i+'-col-'+j);
             },this);
@@ -169,23 +179,38 @@ var CardsetEditor = new Class({
         //Setup all data
         this.mapping   = JSON.decode(this.element.getElement('input[name=cardset-mapping]').value);
         this.samplerow = this.listEditor.getRows().getRandom();
-        this.setTemplate(this.element.getElement('input[name=cardset-template]').value);
+        if (this.currentTemplate()){
+            this.fetchTemplate(this.currentTemplate());
+        }
         // Add element for the draggers, render contents dynamically later.
-        new Element('div.draggers').inject(this.element.getElement('.card-container'),'before');
+        new Element('div.draggers.clearfix').inject(this.element.getElement('.card-container'),'before');
         // Add event for template changes
-        var t = this;
-        this.element.getElement('input[name=cardset-template]').addEvent('change',function(event){
-            t.setTemplate(this.get('value'));
-            t.render();
-        });
+        this.element.getElement('.template-selector').slide('hide');
+        this.element.getElements('.template-selector .template a').each(function(a){
+            a.addEvent('click',function(event){
+                event.preventDefault();
+                a.getParent().getPrevious('input').set('checked',true);
+                this.fetchTemplate(this.currentTemplate());
+            }.bind(this));
+        }.bind(this));
+        this.element.getElement('.button.pick-template').addEvent('click',function(event){
+            event.preventDefault();
+            this.element.getElement('.template-selector').slide('toggle');
+        }.bind(this));
+        this.element.getElements('input[name=cardset-template]').addEvent('change',function(){
+            this.fetchTemplate(this.currentTemplate());
+            this.render();
+        }.bind(this))
+        // Render
         this.render();
     },
+    
     
     render: function(){
         // Update the draggers
         var draggers = this.element.getElement('.draggers').empty()
         for (var v in this.samplerow){
-            var dragger = new Element('div',{'html':this.samplerow[v]}).inject(draggers);
+            var dragger = new Element('div.dragger',{'html':this.samplerow[v]}).inject(draggers);
             dragger.grab(new Element('span.mapping',{'html':v}),'top')
         }
         // Update the card fields
@@ -193,11 +218,22 @@ var CardsetEditor = new Class({
         fields.each(function(field){
             var fieldname  = this.getFieldName(field);
             field.empty();
+            field.removeClass('empty');
             if (fieldname in this.mapping && this.mapping[fieldname] in this.samplerow){
                 field.set('html',this.samplerow[this.mapping[fieldname]])
-                field.grab(new Element('span.mapping',{'html':this.mapping[fieldname]}),'top')
+                var removeLink = new Element('a',{ 'href':'#', 
+                    'events':{
+                        'click':function(event){
+                            event.preventDefault();
+                            delete this.mapping[fieldname];
+                            this.render();
+                        }.bind(this)
+                    }
+                }).grab(new Element('span.icon-x',{'html':'x'}));
+                field.grab(new Element('span.mapping',{'html':this.mapping[fieldname]+' '}).grab(removeLink));
             } else {
-                field.set('html','&#160;&#160;')
+                field.set('html','EMPTY');
+                field.addClass('empty');
             }
         },this);
         // Enable the draggers
@@ -206,13 +242,14 @@ var CardsetEditor = new Class({
             event.stop();
             var dragger = this;
             var clone = dragger.clone().setStyles(dragger.getCoordinates()).setStyles({
-                'position': 'absolute'
+                'position': 'absolute','opacity':0.7
             }).inject(document.body);
             
             var drag = new Drag.Move(clone, {
                 'droppables': fields,
                 
                 onDrop: function(dragging, field){
+                    field.setStyle('background','inherit');
                     dragging.destroy();
                     if (field != null){
                         editor.setMapping([editor.getFieldName(field)],dragging.getElement('.mapping').get('html'));
@@ -220,10 +257,10 @@ var CardsetEditor = new Class({
                     }
                 },
                 onEnter: function(dragging, field){
-                    field.tween('background-color', '#98B5C1');
+                    field.setStyle('background', '#57A6CE');
                 },
                 onLeave: function(dragging, field){
-                    field.tween('background-color', '#FFF');
+                    field.setStyle('background', 'inherit');
                 },
                 onCancel: function(dragging){
                     dragging.destroy();
@@ -267,7 +304,17 @@ var CardsetEditor = new Class({
         this.element.getElement('input[name=cardset-mapping]').set('value',JSON.encode(this.mapping))
     },
     
-    setTemplate: function(template){
+    currentTemplate: function(){
+        var selected = this.element.getElement('input[name=cardset-template]:checked');
+        if (selected){
+            return selected.get('value')
+        } else {
+            return false;
+        }
+    },
+    
+    fetchTemplate: function(template){
+        // Request the template's HTML
         var hr = new Request.HTML({
             'url':'/template/'+template+'/view',
             'update':this.element.getElement('.card-container'),
@@ -276,6 +323,7 @@ var CardsetEditor = new Class({
             }.bind(this)
         }).get();
         
+        // Request the fieldnames
         var jr = new Request.JSON({
             'url':'/template/'+template+'/fields',
             'onSuccess':function(j,t){
@@ -284,6 +332,25 @@ var CardsetEditor = new Class({
         }).get()
     }
     
+});
+
+var ModalBox = new Class({
+    initialize: function(){
+        // Create Elements
+        this.wrapper   = new Element('div.modal');
+        this.container = new Element('div.inner.boxed');
+        this.overlay   = new Element('div.overlay');
+        // Insert into DOM
+        document.body.grab(this.overlay);
+        this.wrapper.grab(this.container);
+        document.body.grab(this.wrapper);
+    },
+    
+    destroy: function(){
+        this.wrapper.destroy();
+        this.container.destroy();
+        this.overlay.destroy();
+    }
 });
 
 
@@ -296,32 +363,37 @@ var StudyClient = new Class({
     
     initialize: function(id, box_id, options){
         this.setOptions(options);
-        this.element = $(id);
-        this.box_id = box_id
+        this.element   = $(id);
+        this.box_id    = box_id
         this.cardstack = [];
+        this.flipKeyboard  = new Keyboard({
+            defaultEventType: 'keydown',
+            events: {
+                'space': this.flipCard.bind(this),
+                'enter': this.flipCard.bind(this)
+            }
+        });
+        this.sendKeyboard = new Keyboard({
+             defaultEventType: 'keydown',
+             events: {
+                 'space': this.sendCard.pass(false,this),
+                 'enter': this.sendCard.pass(true,this)
+             }
+        });
+        this.flipKeyboard.activate();
+        // Create Elements
         this.cardContainer = this.element.getElement('.card-container');
-        this.element.getElement('.buttons').adopt(new Element('a',{
-            'url':'#',
-            'html':'correct',
-            'class':'button-correct',
-            'events':{
-                'click':function(e){
-                    this.sendCard(true);
-                    return false;
-                }.bind(this)
-            }
-        }));
-        this.element.getElement('.buttons').adopt(new Element('a',{
-            'url':'#',
-            'html':'wrong',
-            'class':'button-wrong',
-            'events':{
-                'click':function(e){
-                    this.sendCard(false);
-                    return false;
-                }.bind(this)
-            }
-        }));
+        var correctButton = this.element.getElement('.button.correct');
+        var wrongButton = this.element.getElement('.button.wrong');
+        // Add Events
+        correctButton.addEvent('click',function(e){
+            this.sendCard(true);
+            return false;
+        }.bind(this));
+        wrongButton.addEvent('click',function(e){
+            this.sendCard(false);
+            return false;
+        }.bind(this));
         this.currentCard = null;
         this.cardRequest = new Request.HTML({
             url:'/box/'+this.box_id+'/next_card',
@@ -332,6 +404,7 @@ var StudyClient = new Class({
             this.cardstack.push(t);
             this.update();
         }.bind(this));
+        document.body.set('tween', {duration: '30000', property: 'background-color'});
         this.update();
     },
     
@@ -356,22 +429,15 @@ var StudyClient = new Class({
         var boxInfo = this.element.getElement('.box-info').empty();
         this.cardContainer.adopt(nextCard);
         this.currentCard = this.cardContainer.getElement('.card');
-        cardInfo.adopt(this.cardContainer.getElement('.card-info').show());
-        boxInfo.adopt(this.cardContainer.getElement('.box-info').show());
+        cardInfo.adopt(this.cardContainer.getElement('.card-info').getChildren());
+        boxInfo.adopt(this.cardContainer.getElement('.box-info').getChildren());
         var front_slide = new Fx.Slide(this.currentCard.getElement('div.front'));
         var back_slide = new Fx.Slide(this.currentCard.getElement('div.back'));
         back_slide.hide();
         this.currentCard.store('front_slide',front_slide);    
         this.currentCard.store('back_slide',back_slide);
         this.currentCard.addEvent('click',this.flipCard.bind(this));
-        KeyBinder.bindKey('flip',{'keys': 'space',
-                        'description':'flip the current card',
-                        'handler':this.flipCard.bind(this)
-        });
-        KeyBinder.bindKey('flip',{'keys': 'enter',
-                        'description':'flip the current card',
-                        'handler':this.flipCard.bind(this)
-        });
+        this.flipKeyboard.activate()
     },
     
     drawStack: function(){
@@ -390,14 +456,7 @@ var StudyClient = new Class({
         
         this.currentCard.retrieve('front_slide').toggle();
         this.currentCard.retrieve('back_slide').toggle();
-        KeyBinder.bindKey('flip',{'keys': 'enter',
-                        'description':'answered correctly',
-                        'handler':this.sendCard.pass(true,this)
-        });
-        KeyBinder.bindKey('flip',{'keys': 'space',
-                        'description':'answered wrong',
-                        'handler':this.sendCard.pass(false,this)
-        });
+        this.sendKeyboard.activate()
     },
     
     sendCard: function(correct){
@@ -405,9 +464,9 @@ var StudyClient = new Class({
         this.cardContainer.getElement('form .correct').set('value', String(correct))
         this.cardContainer.getElement('form').send()
         if(correct){
-            this.element.getElement('.button-correct').highlight('#AEE36D')
+            this.element.getElement('.button.correct').highlight('#AEE36D')
         } else {
-            this.element.getElement('.button-wrong').highlight('#BF6F8C')
+            this.element.getElement('.button.wrong').highlight('#BF6F8C')
         }
         this.cardContainer.empty();
         this.element.getElement('.card-info').empty();
@@ -436,6 +495,7 @@ var KeyBinder = new new Class({
     
     bindKey: function(name, shortcut){
         var remaining = []
+        console.log(shortcut)
         this.shortcuts.each(function(item, index){
             if ( item.keys == shortcut.keys ){
                 this.keyboard.removeEvent(item.keys, item.handler);

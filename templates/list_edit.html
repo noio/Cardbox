@@ -6,19 +6,17 @@
     <div class="span-24">
         {% if list.is_saved %}
         <form id='list-edit-form' action="{% url cardbox.views.list_edit name=list.name %}" method="post">
-        <div class='page-head'>
-            <span class='item-icon list'></span>
-            <h3></span><span class='faded'>Editing list: </span></h3> <input class='title' name='title' type='text' value='{{list.title}}'>
+        <div class='page-head boxed'>
+            <h3><span class='icon-list'>list</span><input class='title' name='title' type='text' value='{{list.title}}'></h3> 
         {% else %}
         <form id='list-edit-form' action="{% url cardbox.views.list_create %}" method="post">
         <div class='page-head'>
-            <span class='item-icon list'></span>
-            <h3><span class='faded'>Creating a list named: </span></h3> <input class='title' name='title' type='text' value='{{list.title}}'>
+            <h3><span class='icon-list'>list</span><input class='title' name='title' type='text' value='{{list.title}}'></h3> 
         {% endif %}
-            <div class='button-bar standalone'><ul>
-                {% if list.is_saved %}<li><a class='button-cancel' href='{% url cardbox.views.list_view name=list.name %}'><span class='icon'></span>Cancel</a></li>{%endif%}
-                <li><a class='button-save' href='#' onClick='$("list-edit-form").submit()'><span class='icon'></span>Save Changes</a></li>
-            </ul></div>
+                {% if list.is_saved %}
+                    <a class='button' href='{% url cardbox.views.list_view name=list.name %}'>
+                    <span class='icon-cancel'>c</span>Cancel</a></li>{%endif%}
+                <a class='button' href='#' onClick='$("list-edit-form").submit()'><span class='icon-save'>s</span>Save Changes</a></li>
         </div>
         
         <ul class='errors'>
@@ -53,12 +51,23 @@
         <div id='cardset-editors'>
             {% if list.is_saved %}
             {% for cardset in list.cardset_set %}
-            <div class='cardset-editor'>
-                <input type='text' name='cardset-title' value='{{cardset.title}}'>
-                <input type='text' name='cardset-template' value='{{cardset.get_template_name}}'>
+            <div class='cardset-editor boxed clearfix'>
+                <h3><span class='icon-cardset'>c</span><input type='text' name='cardset-title' value='{{cardset.title}}'></h3>
+                <a class='button pick-template' href='#'>Pick template</a>
+                {# <input type='hidden' name='cardset-template' value='{{cardset.get_template_name}}'> #}
                 <input type='hidden' name='cardset-id' value='{{cardset.key.id}}'>
                 <input type='hidden' name='cardset-mapping' value='{{cardset.mapping_json}}'>
-                <div class='card-container splitview'>{{cardset.sample}}</div>
+                <div class='template-selector clearfix'>
+                    {% for t in templates %}
+                        <div class='template'>
+                            <input type="radio" name="cardset-template" 
+                                   value="{{t.template_name}}" 
+                                   {% ifequal t.template_name cardset.get_template_name %}checked="checked"{%endifequal%}/>
+                            <label><a href='#'>{{t.render_icon}}</a></label>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class='card-container cards-split clearfix'>{{cardset.sample}}</div>
             </div>
             {% endfor %}
             {% endif %}
@@ -81,12 +90,20 @@
         
         </form>
         {# New (prototype) cardset editor #}
-        <div id='new-cardset-editor' style='display:none'>
-            <input type='text' name='cardset-title' value='new'>
-            <input type='text' name='cardset-template' value='default'>
+        <div id='new-cardset-editor' class='cardset-editor boxed clearfix' style='display:none'>
+            <input type='text' name='cardset-title' value=''>
+            <input type='hidden' name='cardset-template' value='default'>
             <input type='hidden' name='cardset-id' value='_new'>
             <input type='hidden' name='cardset-mapping' value='{}'>
-            <div class='card-container splitview'></div>
+            <div class='template-selector clearfix'>
+                {% for t in templates %}
+                    <div class='template'>
+                        <input id="{{t.template_name}}" type="radio" name="cardset-template" value="{{t.template_name}}" {% ifequal t.template_name cardset.get_template_name %}checked="checked"{%endifequal%}/>
+                        <label for="{{t.template_name}}">{{t.render_icon}}</label>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class='card-container cards-split clearfix'></div>
         </div>
     </div>
 {% endblock %}

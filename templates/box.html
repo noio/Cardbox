@@ -8,55 +8,54 @@
         <form action="{% url cardbox.views.box_create %}" id='box-form' method="post">
         {% endif %}
         
-            <div class='page-head'>
-                <span class='item-icon box'></span>
-                <h3><span class='faded'>Editing your box :</span></h3><input class='title' id="id_title" type="text" value="{{box.title}}" name="title">
-                <div class='button-bar standalone'><ul>
-                    <li><a class='button-cancel' href='{% url cardbox.views.frontpage %}'><span class='icon'></span>Cancel</a></li>
-                    <li><a class='button-save' href='#' onClick='$("box-form").submit()'><span class='icon'></span>Save Changes</a></li> 
-                </ul></div>
+            <div class='boxed page-head'>
+                <h3><span class='icon-box'>box</span> <input class='title' id="id_title" type="text" value="{{box.title}}" name="title"></h3>
+                    <a class='button' href='#' onClick='$("box-form").submit()'><span class='icon-save'>s</span>Save Changes</a>
+                    <a class='button' href='{% url cardbox.views.frontpage %}'><span class='icon-cancel'>c</span>Cancel</a>
             </div>
             
-            <h3>Selected sets:</h3> 
+            <h3>Selected sets</h3> 
             <p>The following sets are currently in this box. Click remove to remove them. Your studying progress for a set
                 will be lost 30 days after you it from the box, unless you add it again in the meantime.</p>
                 <ul id='selected-cardsets'>
+                    
                     {% for cardset in box.fetch_cardsets %}
-                        <li class='cardset'>{{cardset.factsheet.title}} ({{cardset.title}})<input type='hidden' name='cardset-id' value='{{cardset.key.id}}'></li>
-                    {% endfor %}
+                        <li class='cardset' id='cardset-{{cardset.key.id}}'>
+                            <span class='cardset-title'>{{cardset.factsheet.title}} ({{cardset.title}})</span>
+                            <input type='hidden' name='cardset-id' value='{{cardset.key.id}}'>
+                            <span class='examples'>
+                                {% for c in cardset.contents|slice:":4" %}
+                                    <span class='example-{{forloop.counter}}'>{{c.front|first}}: {{c.back|first}},</span>    
+                                {%endfor%}<span class='example-4'>...</span>
+                            </span>
+                            <a href='#' class='button'><span class='icon-trash'>r</span><span class='text'>Remove</span></a>
+                        </li>
+                    {%endfor%}
+                    
                 </ul>
-                
-                <script type='text/javascript'>
-                    $$('#selected-cardsets li.cardset').each(function(s){
-                        var idinput = s.getElement('input[name=cardset-id]');
-                        var cid = idinput.get('value');
-                        s.grab(new Element('a',{
-                            'html':'remove','href':'#','class':'button action-remove',
-                            'events':{
-                            'click':function(event){
-                                event.preventDefault();
-                                s.toggleClass('removed');
-                                if (s.hasClass('removed')){
-                                    s.getElement('input[name=cardset-id]').set('value','');
-                                    this.set('html','add').removeClass('action-remove').addClass('action-add');
-                                } else {
-                                    s.getElement('input[name=cardset-id]').set('value',cid);
-                                    this.set('html','remove').removeClass('action-add').addClass('action-remove');
-                                }
-                        }}}));
+            <script type='text/javascript'>
+                $$('#selected-cardsets li.cardset').each(function(s){
+                    var idinput = s.getElement('input[name=cardset-id]');
+                    var cid = idinput.get('value');
+                    var a = s.getElement('.button');
+                    a.addEvent('click',function(event){
+                        event.preventDefault();
+                        s.toggleClass('removed');
+                        if (s.hasClass('removed')){
+                            s.getElement('input[name=cardset-id]').set('value','');
+                            s.set('opacity',0.5)
+                            this.getElement('span.text').set('html','Undo')
+                            this.getElement('span.icon-trash').removeClass('icon-trash').addClass('icon-undo');
+                        } else {
+                            s.getElement('input[name=cardset-id]').set('value',cid);
+                            s.set('opacity',1)
+                            this.getElement('span.text').set('html','Remove').removeClass('action-add').addClass('action-remove');
+                            this.getElement('span.icon-undo').removeClass('icon-undo').addClass('icon-trash');
+                        }
                     });
-                </script>
-                
-            </div>
-            
-            <hr class='space'> 
-            
-            <hr class='space'>
-            
-            <div class='span-24 button-bar standalone'><ul>
-                <li><a class='button-cancel' href='{% url cardbox.views.frontpage %}'><span class='icon'></span>Cancel</a></li>
-                <li><a class='button-save' href='#' onClick='$("box-form").submit()'><span class='icon'></span>Save Changes</a></li> 
-            </ul></div>
+                });
+            </script>
+                        
         </form>
     </div>
 {% endblock %}

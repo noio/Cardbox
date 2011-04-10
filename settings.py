@@ -2,7 +2,7 @@
 
 import os
 
-APPEND_SLASH = False
+APPEND_SLASH = True
 DEBUG = True
 INSTALLED_APPS = ('cardbox',)
 ROOT_PATH = os.path.dirname(__file__)

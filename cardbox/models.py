@@ -9,6 +9,7 @@ import yaml
 import random
 import logging
 import base64
+import csv
 
 # AppEngine Imports
 from google.appengine.ext import db
@@ -122,11 +123,6 @@ class Factsheet(db.Model):
     def title(self):
         return name_to_title(self.name) if self.name != '' else ''
         
-    def set_meta(self,book=None, subject=None):
-        if book is not None:
-            self.meta_book = book
-        if subject is not None:
-            self.meta_subject = subject
     
     def set_title(self, new_title):
         name       = title_to_name(new_title)
@@ -135,10 +131,11 @@ class Factsheet(db.Model):
                                     It has to start with a letter, and it has to be between 5 and 
                                     50 letters long. Additionally, it cannot start with: %s.
                                  """%(new_title,name,", ".join(RESERVED_TITLES)))
-        other = Factsheet.all().filter('name', name).get()
-        if other:
-            raise FactsheetError(mark_safe("There is already a page with this title. ( <a href='%s'>%s</a> )"
-                %(other.url, name_to_title(other.name))))
+        if self.name != name:
+            other = Factsheet.all().filter('name', name).get()
+            if other:
+                raise FactsheetError(mark_safe("There is already a page with this title. ( <a href='%s'>%s</a> )"
+                    %(other.url, name_to_title(other.name))))
         self.name = name
         
     def set_columns_and_rows(self, columns, rows):
@@ -517,11 +514,11 @@ class Card(db.Model):
             row            = factsheet.rows().get(row_id,None)
             self._template = CardTemplate()
             if factsheet is None:
-                CardTemplate.error = "Factsheet not found or empty."
-                return
+                self._template.error = "Factsheet not found or empty."
+                return self._template
             if row is None:
-                CardTemplate.error = "Card not found in factsheet."
-                return
+                self._template.error = "Card not found in factsheet."
+                return self._template
             # Actual rendering
             self._template = CardTemplate(template_name, mapping)
             self._template.set_content(row)
@@ -560,6 +557,7 @@ class CardTemplate(object):
 
     def load(self,template_name):
         try:
+            self.template_name   = template_name
             self.template_string = open('templates/cards/'+template_name+'.html').read()
             self.template        = django_template.Template(self.template_string)
             self.front_fields    = set(RE_DJANGO_VARIABLE_TAG.findall(RE_CARD_FRONT.findall(self.template_string)[0]))
@@ -573,7 +571,6 @@ class CardTemplate(object):
             self.error           = "Template not found."
             self.template_string = None
 
-    
     def set_mapping(self,mapping):
         self.mapping    = mapping
         self.front_vars = [mapping[f] for f in self.front_fields if f in mapping]
@@ -586,7 +583,7 @@ class CardTemplate(object):
         self.back_data  = [row[v] for v in self.back_vars if v in row]
         self.back_data  = [b for b in self.back_data if b not in self.front_data]
             
-    def render(self,row=None):
+    def render(self,row=None,mode='normal'):
         if self.error:
             return self.render_error(self.error)
         if row:
@@ -599,10 +596,14 @@ class CardTemplate(object):
         for k in base.keys():
             base[k] = mark_safe('<span class="tfield tfield_%s" id="tfield_%s">%s</span>'%(k,k,encode_html(base[k])))
         # Apply the template
+        base['mode'] = mode
         return self.template.render(Context(base))
         
     def render_fields(self):
         return self.render(dict(((f,f) for f in self.fields)))
+        
+    def render_icon(self):
+        return self.render(dict(((f,f) for f in self.fields)),mode='icon')
         
     @classmethod
     def render_error(cls, message):

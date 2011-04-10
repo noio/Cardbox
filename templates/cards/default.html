@@ -1,17 +1,22 @@
 <div class="card">
 
+{% if not mode or mode == "normal"%}
     <!--FRONT-->
-    <div class='front'>
-    <h2 style="margin-bottom:2px;text-align:center;">{{arg1}}</h2>
+    <div class='front' style='width:400px; height:252px; padding: 10px; background:url("/static/ca/default_bg.png")'>
+    <p style="font-size: 2em; line-height: 30px;margin:33px auto 2px;text-align:center;">{{arg1}}</h2>
     </div>
     <!--/FRONT-->
 
     <!--BACK-->
-    <div class='back'>
-    <h2 style="margin-bottom:2px;text-align:center;">{{arg1}}</h2>
-    <h3 style="margin-bottom:10px;text-align:center;">{{arg2}}</h3>
-    <h2 style="text-align:center;">{{arg3}}</h2>
+    <div class='back' style='width:400px; height:252px; padding: 10px; background:url("/static/ca/default_bg.png")'>
+    <p style="font-size: 2em; line-height: 30px;margin:33px auto 2px;text-align:center;">{{arg1}}</h2>
+    <p style="font-size: 1.5em; margin:32px 0 0; line-height: 30px; text-align:center;">{{arg3}}</h2>
     </div>
     <!--/BACK-->
+{% endif %}
+
+{% if mode == "icon" %}
+    <div class='template-icon' style='width: 100px; height: 80px; background:url("/static/ca/default_icon.png")'></div>
+{% endif %}
     
 </div>

@@ -514,10 +514,12 @@ class Card(db.Model):
             row            = factsheet.rows().get(row_id,None)
             self._template = CardTemplate()
             if factsheet is None:
-                self._template.error = "Factsheet not found or empty."
+                self._template.error = "List not found or empty."
+                logging.error("Factsheet(%s) was not found from Card(%s)"%(self.get_cardset().title, self.key().name()))
                 return self._template
             if row is None:
-                self._template.error = "Card not found in factsheet."
+                self._template.error = "Card not found in list."
+                logging.error("Row(%s) was not found in Factsheet(%s) from card(%s). "%(row_id, factsheet.name, self.key().name()))
                 return self._template
             # Actual rendering
             self._template = CardTemplate(template_name, mapping)

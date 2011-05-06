@@ -1,0 +1,38 @@
+{% extends "mobile_base.html" %}
+
+{% block content %}
+
+<form id='frm' action="{% url cardbox.views.mobile_study box.key.id %}" method="post">
+    <input class='card_id' type="hidden" name="card_id" value="{{card.key.name}}"/>
+    <input id='correct' class='correct' type="hidden" name="correct" value="0"/>
+</form>
+
+
+<h3>{{box.title}}<span class='perc'>{{box.stats.percent_learned|floatformat}}%</span></h3>
+<div class='bar'><div class='filled' style="width:{{box.stats.percent_learned|floatformat}}%"></div></div>
+
+<div>
+  {{card.render_mobile}}
+</div>
+
+<ul class='buttons'>
+  <li>
+    <a href='#' onclick='setAndSend(true); return false;'><h3>Correct</h3></a>
+  </li>
+  <li>
+    <a href='#' onclick='setAndSend(false); return false;'><h3>Wrong</h3></a>
+  </li>
+</ul>
+
+<script type="text/javascript" charset="utf-8">
+  function setAndSend(correct){
+    document.getElementById('correct').value = correct ? '1' : '0';
+    document.getElementById('frm').submit();
+  }
+  var front = document.getElementById('cardfront');
+  var back = document.getElementById('cardback');
+  back.style.display = 'none';
+  front.onclick = function(){ front.style.display = 'none'; back.style.display='block'; }
+  back.onclick = function(){ front.style.display = 'block'; back.style.display='none'; }
+</script>
+{% endblock content %}

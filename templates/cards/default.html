@@ -1,6 +1,6 @@
 <div class="card">
 
-{% if not mode or mode == "normal"%}
+{% if not render_mode or render_mode == "normal"%}
     <!--FRONT-->
     <div class='front' style='width:400px; height:252px; padding: 10px; background:url("/static/ca/default_bg.png")'>
     <p style="font-size: 2em; line-height: 30px;margin:33px auto 2px;text-align:center;">{{arg1}}</h2>
@@ -15,8 +15,24 @@
     <!--/BACK-->
 {% endif %}
 
-{% if mode == "icon" %}
+{% if render_mode == "icon" %}
     <div class='template-icon' style='width: 100px; height: 80px; background:url("/static/ca/default_icon.png")'></div>
+{% endif %}
+
+{% if render_mode == "mobile" %}
+    <!-- TODO: FIX FONT SIZES -->
+    <!--FRONT-->
+    <div id='cardfront' class='front' style='height:252px; padding: 10px 0; border: 4px solid #D6CFC3; background:#E9EBC0;'>
+    <p style="font-size: 4em; line-height: 30px;margin:33px auto 2px;text-align:center;">{{arg1}}</h2>
+    </div>
+    <!--/FRONT-->
+
+    <!--BACK-->
+    <div id='cardback' class='back' style='height:252px; padding: 10px 0; border: 4px solid #D6CFC3; background:#E9EBC0;'>
+    <p style="font-size: 4em; line-height: 30px;margin:33px auto 2px;text-align:center;">{{arg1}}</h2>
+    <p style="font-size: 3em; margin:32px 0 0; line-height: 30px; text-align:center;">{{arg3}}</h2>
+    </div>
+    <!--/BACK-->
 {% endif %}
     
 </div>

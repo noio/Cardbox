@@ -27,5 +27,9 @@ urlpatterns = patterns('',
    
    (r"^template/$","cardbox.views.templates"),
    (r"^template/([a-z0-9\_]+)/view$","cardbox.views.template_view"),
-   (r"^template/([a-z0-9\_]+)/fields$","cardbox.views.template_fields")
+   (r"^template/([a-z0-9\_]+)/fields$","cardbox.views.template_fields"),
+   
+   (r"^mobile/$","cardbox.views.mobile_front"),
+   (r"^mobile/box/([0-9]+)/study","cardbox.views.mobile_study"),
+   
 )

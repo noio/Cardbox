@@ -337,7 +337,7 @@ class Box(db.Model):
         last_studied = card.last_studied
         interval     = card.interval
         # Schedule
-        learned_until = max(last_studied + minutes(1), last_correct + days((interval-1)*2))
+        learned_until = max(last_studied + minutes(1), last_correct + days((interval-1)*4)) # TODO: DO NOT HARDCODE
         return learned_until.replace(microsecond=0)
         
     def stats(self):
@@ -529,6 +529,9 @@ class Card(db.Model):
     def render(self):
         return self.template().render()
     
+    def render_mobile(self):
+        return self.template().render(mode="mobile")
+    
     def data(self):
          return {'front':self.template().front_data,'back':self.template().back_data}
 
@@ -598,7 +601,7 @@ class CardTemplate(object):
         for k in base.keys():
             base[k] = mark_safe('<span class="tfield tfield_%s" id="tfield_%s">%s</span>'%(k,k,encode_html(base[k])))
         # Apply the template
-        base['mode'] = mode
+        base['render_mode'] = mode
         return self.template.render(Context(base))
         
     def render_fields(self):

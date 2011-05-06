@@ -461,7 +461,7 @@ var StudyClient = new Class({
     
     sendCard: function(correct){
         if (this.currentCard === null){return;}
-        this.cardContainer.getElement('form .correct').set('value', String(correct))
+        this.cardContainer.getElement('form .correct').set('value', correct?'1':'0')
         this.cardContainer.getElement('form').send()
         if(correct){
             this.element.getElement('.button.correct').highlight('#AEE36D')

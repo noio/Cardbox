@@ -1,0 +1,49 @@
+/* reset.css */
+html, body, div, span, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, code, del, dfn, em, img, q, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, dialog, figure, footer, header, hgroup, nav, section {margin:0;padding:0;border:0;font-weight:inherit;font-style:inherit;font-size:100%;font-family:inherit;vertical-align:baseline;}
+article, aside, dialog, figure, footer, header, hgroup, nav, section {display:block;}
+body {line-height:1.5;}
+table {border-collapse:separate;border-spacing:0;}
+caption, th, td {text-align:left;font-weight:normal;}
+table, td, th {vertical-align:middle;}
+blockquote:before, blockquote:after, q:before, q:after {content:"";}
+blockquote, q {quotes:"" "";}
+a img {border:none;}
+html,body {height: 100%;}
+
+/* typography.css */
+html {font-size:100.01%;}
+body {font-size:100%;color:#222;background:#fff;font-family:"Helvetica Neue",Helvetica, Verdana, Arial, sans-serif;}
+h1, h2, h3, h4, h5, h6 {font-weight:normal;color:#111;}
+h1 {font-size:3em;line-height:1;margin-bottom:0.5em;}
+h2 {font-size:2.5em;margin-bottom:0.75em;}
+h3 {font-size:2em;line-height:1;margin-bottom:1em;}
+p {margin:0 0 1.5em;}
+p img.left {float:left;margin:1.5em 1.5em 1.5em 0;padding:0;}
+p img.right {float:right;margin:1.5em 0 1.5em 1.5em;}
+a:focus, a:hover {color:#000;}
+a {color:#009;text-decoration:underline;}
+strong {font-weight:bold;}
+em, dfn {font-style:italic;}
+pre, code, tt {font:1em 'andale mono', 'lucida console', monospace;line-height:1.5;}
+
+/*STYLES*/
+body    { width: 100%;max-width: 500px;background: #f0f0f0; color: #403c3b;}
+
+a             { color: #315875; text-decoration: none;}
+a:hover       { color: #000000;}
+
+li      {padding: 10px 0; list-style: none;}
+/*ELEMENTS*/
+#logo         { display: block; text-indent: -9999px; height: 60px; width: 100%;
+                background: url('logo-mobile.png') no-repeat center; margin: 10px auto 0;}
+
+p         { margin: 10px; font-size: 1.5em;}
+h3        { margin: 5px;}
+h3 .perc  { float: right; }
+.box      { margin: 5px 0px 5px; padding: 10px 0;}
+.bar      { clear: both; height: 12px; background: #EC3319; }
+.bar .filled {height: 12px; background: #00DA55;}
+
+.card     { margin: 10px;}
+
+.buttons li {text-align: center;}

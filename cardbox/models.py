@@ -9,6 +9,7 @@ import yaml
 import random
 import logging
 import base64
+import math
 import csv
 
 # AppEngine Imports
@@ -27,6 +28,9 @@ from django.core.urlresolvers import reverse
 
 # Library Imports
 import tools.diff_match_patch as dmp
+
+# Local Imports
+import draw
 
 ### Constants ###
 NUM_INTERVALS = 12
@@ -342,7 +346,8 @@ class Box(db.Model):
         last_studied = card.last_studied
         interval     = card.interval
         # Schedule
-        learned_until = max(last_studied + minutes(1), last_correct + days((interval-1)*4)) # TODO: DO NOT HARDCODE
+        learned_until = max(last_studied + minutes(1), last_correct + days((interval-1)*4))
+        logging.info("Card (i: %d, lc: %s) rescheduled to %s"%(interval, last_correct, learned_until))
         return learned_until.replace(microsecond=0)
         
     def stats(self):
@@ -353,6 +358,22 @@ class Box(db.Model):
             percentage = (n_learned/float(n_cards))*100.0 if n_cards > 0 else 0.0
             self._stats = {'percent_learned':percentage,'n_learned':n_learned,'n_cards':n_cards}
         return self._stats
+        
+    def interval_chart(self):
+        if not hasattr(self, '_interval_chart') or self._stack_charts is None:
+            latest_stats = DailyBoxStats.all().ancestor(self).order('-day').get()
+            if latest_stats is None:
+                intervals = [self.stats['n_cards']] + [0] * (NUM_INTERVALS-1)
+            else:
+                intervals = latest_stats.intervals
+            scale = min(1,10.0/max(intervals))
+            ch = []
+            for i in range(len(intervals)):
+                svg = draw.svg_cardstack(math.ceil(intervals[i]*scale),'cbx')
+                ch.append({'num':intervals[i],'svg':mark_safe(svg)})
+                logging.info(svg)
+            self._interval_chart = ch
+        return self._interval_chart
         
     def charts(self):
         if not hasattr(self, '_charts'):
@@ -434,30 +455,26 @@ class Card(db.Model):
     
     def answered(self, correct=False):
         """ Update the card with correct/wrong stats."""
-        def txn():
-            if correct:
-                self.last_correct = now
-                self.n_correct += 1
-                self.interval += 1
-                self.in_study_set = False
-            else:
-                self.n_wrong += 1
-                self.interval -= 1
-            self.last_studied = now
-            self.interval = min(NUM_INTERVALS,max(1, self.interval))
-            self.learned_until = learned_until
-            log_line = yaml.dump([[now,
-                                   int(self.n_correct), 
-                                   int(self.n_wrong), 
-                                   int(self.interval),
-                                   self.learned_until]])
-            self.history += log_line
-            self.put()
-        
-        box = self.parent()
-        learned_until = box.reschedule_card(self)
         now = datetime.datetime.now().replace(microsecond=0)
-        db.run_in_transaction(txn)
+        box = self.parent()
+        self.last_studied = now
+        if correct:
+            self.last_correct = now
+            self.n_correct += 1
+            self.interval += 1
+            self.in_study_set = False
+        else:
+            self.n_wrong += 1
+            self.interval -= 1
+        self.interval = min(NUM_INTERVALS,max(1, self.interval))
+        self.learned_until =  box.reschedule_card(self)
+        log_line = yaml.dump([[now,
+                               int(self.n_correct), 
+                               int(self.n_wrong), 
+                               int(self.interval),
+                               self.learned_until]])
+        self.history += log_line
+        self.put()
         box.update_time_studied()
         
     def studied(self):

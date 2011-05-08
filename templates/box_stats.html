@@ -3,6 +3,17 @@
 {% load cardbox_filters %}
 {% block content %}
     <div class="span-24 last">
+        <h3>Intervals</h3>
+        <p>The intervals, shown below, indicate how well you know your cards. Every time you answer a card correctly,
+            it goes up an interval, if you answer it wrongly, it goes down one. The higher the interval, the longer
+            we'll wait before asking you to study that card again.</p>
+        <div class = "span-24 last">
+            {% for interval in box.interval_chart %}
+            <div class= "span-2 {%if forloop.last %}last{%endif%}">{{interval.svg}}
+            <p style='text-align:center'>{{interval.num}} cards</p>
+            </div>
+            {% endfor %}
+        </div>
         <h3><span class='faded'/>Stats for box:</span> {{box.title}}</h3>
         <div class='span-8'>
             <p>This box, titled &ldquo;<strong>{{box.title}}</strong>&rdquo; 
@@ -24,6 +35,5 @@
             <p>The next chart shows you how well you know your best cards, and how well you know your cards on average.</p>
             {{box.charts.interval.img}}
         </div>
-        
     </div>
 {% endblock %}

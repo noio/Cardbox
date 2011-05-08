@@ -207,7 +207,7 @@ def create_box_stats(for_box, days_back=10):
         td = datetime.timedelta(days=d)
         day = datetime.date.today() - td
         mapper = BoxStatsMapper(day, ancestor=for_box)
-        deferred.defer(mapper.run, _countdown = 6 * (d-1))
+        deferred.defer(mapper.run)
         
 class BoxStatsMapper(Mapper):
     
@@ -252,3 +252,7 @@ class BoxStatsMapper(Mapper):
                                      max_interval=self.max_interval,
                                      min_interval=self.min_interval)
         stats.put()
+        
+### TASKS ###
+def task_clean_all_cards(request):
+    pass

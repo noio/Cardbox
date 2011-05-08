@@ -4,12 +4,14 @@
 <p>Pick box to study:</p>
 <ul>
 {% for box in request.user.my_boxes %}
+    {% if not box.is_empty %}
     <li>
         <a href="{% url cardbox.views.mobile_study box.key.id %}">
             <h3>{{box.title}}<span class='perc'>{{box.stats.percent_learned|floatformat}}%</span></h3>
             <div class='bar'><div class='filled' style="width:{{box.stats.percent_learned|floatformat}}%"></div></div>
         </a>
     </li>
+    {% endif %}
 {% endfor %}
 </ul>
 {% endblock content %}

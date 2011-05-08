@@ -29,11 +29,12 @@ pre, code, tt {font:1em 'andale mono', 'lucida console', monospace;line-height:1
 /*STYLES*/
 body    { width: 100%;background: #f0f0f0; color: #403c3b;}
 
-a             { color: #315875; text-decoration: none;}
-a:hover       { color: #000000;}
+a { color: #315875; text-decoration: none;}
+a:hover { color: #000000;}
 
 li      {padding: 10px 0; list-style: none;}
 /*ELEMENTS*/
+h1 {margin-bottom: 0;}
 #logo         { display: block; text-indent: -9999px; height: 60px; width: 100%;
                 background: url('logo-mobile.png') no-repeat center; margin: 10px auto 0;}
 
@@ -47,3 +48,5 @@ h3 .perc  { float: right; }
 .card     { margin: 10px;}
 
 .buttons li {text-align: center;}
+.buttons .correct {border-left: 6px solid #00DA55; background: #B3EAC9;}
+.buttons .wrong {border-left: 6px solid #EC3319; background: #EFC0BA;}

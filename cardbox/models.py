@@ -369,7 +369,7 @@ class Box(db.Model):
             scale = min(1,10.0/max(intervals))
             ch = []
             for i in range(len(intervals)):
-                svg = draw.svg_cardstack(math.ceil(intervals[i]*scale),'cbx')
+                svg = draw.svg_cardstack(int(math.ceil(intervals[i]*scale)),'cbx')
                 ch.append({'num':intervals[i],'svg':mark_safe(svg)})
                 logging.info(svg)
             self._interval_chart = ch
@@ -377,8 +377,8 @@ class Box(db.Model):
         
     def charts(self):
         if not hasattr(self, '_charts'):
-            recent =  datetime.date.today() - datetime.timedelta(days=2)
-            recentstats = DailyBoxStats.all().ancestor(self).filter('day >',recent)
+            recent = datetime.date.today() - datetime.timedelta(days=2)
+            recentstats = DailyBoxStats.all().ancestor(self).order('-day').filter('day >',recent)
             if recentstats.count(limit=1) < 1:
                 from engine import create_box_stats
                 create_box_stats(self, days_back=40)

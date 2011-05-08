@@ -244,7 +244,6 @@ def mobile_front(request):
 def mobile_study(request, box_id):
     box = get_by_id_or_404(request, models.Box, box_id, require_owner=True)
     if request.method == 'POST':
-        # TODO update card status
         card_id = request.POST['card_id']
         correct = request.POST['correct'] == '1'
         logging.info(correct)
@@ -309,6 +308,8 @@ def get_by_id_or_404(request, kind, entity_id, require_owner=True):
     account = models.Account.current_user_account
     if entity is None:
         raise Http404
-    if (require_owner and (request.user is None or entity.owner != request.user.google_user)):
+    if (require_owner and 
+        (not request.user_is_admin) and 
+        (request.user is None or entity.owner != request.user.google_user)):
         raise Http404
     return entity

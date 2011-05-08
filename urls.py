@@ -32,4 +32,6 @@ urlpatterns = patterns('',
    (r"^mobile/$","cardbox.views.mobile_front"),
    (r"^mobile/box/([0-9]+)/study","cardbox.views.mobile_study"),
    
+   (r"tasks/clean_all_cards/","cardbox.tasks.clean_all_cards")
+   
 )

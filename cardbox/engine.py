@@ -42,7 +42,6 @@ class Mapper(object):
 
     def __init__(self, next_mapper=None, ancestor=None):
         self.to_put = []
-        self.to_put_dict = {}
         self.to_delete = []
         self.next_mapper = next_mapper
         self.ancestor = ancestor
@@ -81,9 +80,6 @@ class Mapper(object):
         if self.to_put:
             db.put(self.to_put)
             self.to_put = []
-        if self.to_put_dict:
-            db.put(self.to_put_dict.values())
-            self.to_put_dict = {}
         if self.to_delete:
             db.delete(self.to_delete)
             self.to_delete = []
@@ -104,7 +100,6 @@ class Mapper(object):
                 map_updates, map_deletes = self.map(entity)
                 self.to_put.extend(map_updates)
                 self.to_delete.extend(map_deletes)
-                
                 if self.KEYS_ONLY:
                     continue_key = entity
                 else:
@@ -112,7 +107,6 @@ class Mapper(object):
                         continue_key = entity.key()
                     else:
                         continue_key = getattr(entity, self.ORDER_BY)
-
             self._batch_write()
         except DeadlineExceededError:
             logging.info('%s: hit DeadlineExceededError' % (self.__class__.__name__))
@@ -228,12 +222,14 @@ class BoxStatsMapper(Mapper):
         self.total_interval = 0
         self.min_interval = 1000
         self.max_interval = 0
+        self.intervals = [0]*12
         #self.stats = str(stats.key())
         Mapper.__init__(self, **kwds)
         
     def map(self, card):
         state = card.state_at(self.date)
         iv = state['interval']
+        self.intervals[iv-1] += 1
         self.min_interval = min(iv, self.min_interval)
         self.max_interval = max(iv, self.max_interval)
         if state['studied']:
@@ -252,6 +248,7 @@ class BoxStatsMapper(Mapper):
                                      n_cards=self.n_cards,
                                      n_learned=self.n_learned,
                                      avg_interval=avg_interval,
+                                     intervals=self.intervals,
                                      max_interval=self.max_interval,
                                      min_interval=self.min_interval)
         stats.put()

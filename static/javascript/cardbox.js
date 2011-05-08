@@ -1,4 +1,3 @@
-//TODO: Name suggestion broken?
 
 /** CLASSES **/
 

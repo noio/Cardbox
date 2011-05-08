@@ -27,7 +27,7 @@ em, dfn {font-style:italic;}
 pre, code, tt {font:1em 'andale mono', 'lucida console', monospace;line-height:1.5;}
 
 /*STYLES*/
-body    { width: 100%;max-width: 500px;background: #f0f0f0; color: #403c3b;}
+body    { width: 100%;background: #f0f0f0; color: #403c3b;}
 
 a             { color: #315875; text-decoration: none;}
 a:hover       { color: #000000;}

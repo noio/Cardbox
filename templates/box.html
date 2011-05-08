@@ -18,7 +18,9 @@
             <p>The following sets are currently in this box. Click remove to remove them. Your studying progress for a set
                 will be lost 30 days after you it from the box, unless you add it again in the meantime.</p>
                 <ul id='selected-cardsets'>
-                    
+                    <!--
+                      TODO create link to list/cardset
+                    -->
                     {% for cardset in box.fetch_cardsets %}
                         <li class='cardset' id='cardset-{{cardset.key.id}}'>
                             <span class='cardset-title'>{{cardset.factsheet.title}} ({{cardset.title}})</span>

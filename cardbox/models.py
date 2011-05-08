@@ -29,6 +29,8 @@ from django.core.urlresolvers import reverse
 import tools.diff_match_patch as dmp
 
 ### Constants ###
+NUM_INTERVALS = 12
+
 EMPTY_FIELD            = mark_safe('&#160;&#160;')
 RE_DJANGO_VARIABLE_TAG = re.compile(r'{{([a-z0-9_]+)}}')
 RE_CARD_FRONT          = re.compile('<!--FRONT-->(.*?)<!--/FRONT-->',re.S)
@@ -292,6 +294,9 @@ class Cardset(db.Model):
             if v != '' and v not in self.factsheet.columns():
                 raise CardsetError('Mapping contains non-existent column name "%s".'%v)
         self.mapping = yaml.safe_dump(mapping)
+        
+    def get_mapping(self):
+        return yaml.load(self.mapping)
                 
     def mapping_json(self):
         return simplejson.dumps(yaml.load(self.mapping))
@@ -343,20 +348,8 @@ class Box(db.Model):
     def stats(self):
         if not hasattr(self, '_stats') or self._stats is None:
             n_cards = len(list(self.all_card_ids()))
-            cards_query = Card.all(keys_only=False).ancestor(self)
-            #learned.order('learned_until')
-            #learned.filter('learned_until >', datetime.datetime.now())
             now = datetime.datetime.now()
-            cards_query.order('__key__')
-            cards_query.filter('enabled',True)
-            batch = cards_query.fetch(limit=1000)
-            cards = batch[:]
-            while len(batch) >= 1000:
-                cards_query.filter('__key__ >', batch[-1].key())
-                batch = cards_query.fetch(limit=1000)
-                cards.extend(batch)
-            learned_cards = filter(lambda x: x.learned_until > now,cards)
-            n_learned = len(learned_cards)
+            n_learned = Card.all().ancestor(self).filter('enabled',True).filter('learned_until >', now).count(n_cards)
             percentage = (n_learned/float(n_cards))*100.0 if n_cards > 0 else 0.0
             self._stats = {'percent_learned':percentage,'n_learned':n_learned,'n_cards':n_cards}
         return self._stats
@@ -400,12 +393,10 @@ class Box(db.Model):
             available = Card.all().ancestor(self)
             available.filter('enabled',True)
             available.filter('learned_until <', datetime.datetime.now())
-            available = list(available.fetch(100))
+            available.filter('in_study_set', False)
+            available = list(available.fetch(self.study_set_size * 10))
             logging.info("available cards: %d"%len(available))
-            
-            # TODO: Why do I filter this locally and not in the datastore?
-            available = filter(lambda x: not x.in_study_set, available)
-            logging.info("available cards filtered: %d"%len(available))
+            # available = filter(lambda x: not x.in_study_set, available)
             
             refill = random.sample(available,min(len(available),self.study_set_size))
             for c in refill:
@@ -453,7 +444,7 @@ class Card(db.Model):
                 self.n_wrong += 1
                 self.interval -= 1
             self.last_studied = now
-            self.interval = min(12,max(1, self.interval))
+            self.interval = min(NUM_INTERVALS,max(1, self.interval))
             self.learned_until = learned_until
             log_line = yaml.dump([[now,
                                    int(self.n_correct), 
@@ -483,7 +474,7 @@ class Card(db.Model):
         
     def state_at(self, date):
         dt = datetime.datetime.combine(date, datetime.time(0))
-        last_state = {'learned':False,'studied':False,'interval':0}
+        last_state = {'learned':False,'studied':False,'interval':1}
         history = yaml.load(self.history)
         if history: 
             for entry in history:
@@ -495,20 +486,10 @@ class Card(db.Model):
                     }
         return last_state
         
-    def charts(self):
-        chart         = TimelineChart()
-        history       = yaml.load(self.history)
-        times         = []
-        intervals     = []
-        learned_until = []
-        times, a, b, intervals, learned_until = zip(*history)
-        chart.add_line(times, intervals, 'Interval')
-        return {'interval':chart}
-        
     def template(self):
         if not hasattr(self, '_template'):
             factsheet      = self.get_cardset().factsheet
-            mapping        = yaml.load(self.get_cardset().mapping) #TODO Load yaml in cardset, not here
+            mapping        = self.get_cardset().get_mapping()
             template_name  = self.get_cardset().get_template_name()
             row_id         = self.key().name().split('-',1)[1]
             row            = factsheet.rows().get(row_id,None)
@@ -540,6 +521,7 @@ class DailyBoxStats(db.Model):
     day          = db.DateProperty()
     n_learned    = db.IntegerProperty()
     n_cards      = db.IntegerProperty()
+    intervals    = db.ListProperty(int,default=[0]*NUM_INTERVALS)
     avg_interval = db.FloatProperty(default=1.0)
     min_interval = db.IntegerProperty(default=1)
     max_interval = db.IntegerProperty(default=1)

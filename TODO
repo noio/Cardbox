@@ -2,14 +2,11 @@ FEATURES
 ========
 CHANGED: Progressive set learning
 CHANGED: Filtering for browser
-TODO: Wizard for card creation
 
 INTERFACE
 =========
-TODO: picker for scheduler
 CHANGED: Meta data for pages
-TODO: Page renaming
-TODO: Remove silly namespaces from pages
+CHANGED: Remove silly namespaces from pages
 CHANGED: Mapping makkelijker invoeren.
 CHANGED: total time studied for each box
 CHANGED: Queue the cards to learn to avoid page loading time.

@@ -106,50 +106,48 @@ def list_edit(request, name=None):
         factsheet = models.Factsheet.get_by_name(name)
     errors = []
     if request.method == 'POST':
-        # Extract columns and trim last column if unused
-        columns = [request.POST[LIST_HEADER_FORMAT%v] for v in range(10) if LIST_HEADER_FORMAT%v in request.POST]
-        columns = columns if columns[-1] else columns[:-1]
-        # Extract rows
-        logging.info(request.POST)
-        i, rows = 0, []
-        logging.info(LIST_CELL_FORMAT%(i,0))
-        while LIST_CELL_FORMAT%(i,0) in request.POST:
-            row = [request.POST[LIST_CELL_FORMAT%(i,j)] for j in xrange(len(columns))]
-            logging.info(row)
-            if any(row):
-                rows.append(row)
-            i += 1
         try:
-            factsheet.set_title(request.POST['title'])
+            # Extract columns and trim last column if unused
+            columns = [request.POST[LIST_HEADER_FORMAT%v] for v in range(10) if LIST_HEADER_FORMAT%v in request.POST]
+            columns = columns if columns[-1] else columns[:-1]
+            # Extract rows
+            logging.info(request.POST)
+            i, rows = 0, []
+            while LIST_CELL_FORMAT%(i,0) in request.POST:
+                row = [request.POST[LIST_CELL_FORMAT%(i,j)] for j in xrange(len(columns))]
+                logging.info(row)
+                if any(row):
+                    rows.append(row)
+                i += 1
+
             factsheet.set_columns_and_rows(columns, rows)
+            factsheet.set_title(request.POST['title'])
             factsheet.save()
             name = factsheet.name
-        except models.FactsheetError, e:
-            errors.append(u'Error in List: %s'%(unicode(e)))
-        # Process cardset form
-        if 'cardset-id' in request.POST:
-            cids      = request.POST.getlist('cardset-id')
-            mappings  = request.POST.getlist('cardset-mapping')
-            templates = request.POST.getlist('cardset-template')
-            titles    = request.POST.getlist('cardset-title')
-            logging.info(mappings)
-            logging.info(templates)
-            for cid, mapping, template, title in zip(cids, mappings, templates, titles):
-                # Check if an existing set is edited
-                if cid.isdigit():
-                    cardset = models.Cardset.get_by_id(int(cid))
-                    if cardset is None:
-                        errors.append('Edited Cardset not found')
-                else:
-                    cardset = models.Cardset()
-                    cardset.factsheet = factsheet
-                try:
+            # Process cardset form
+            if 'cardset-id' in request.POST:
+                cids      = request.POST.getlist('cardset-id')
+                mappings  = request.POST.getlist('cardset-mapping')
+                templates = [request.POST['cardset-template-%d'%i] for i in range(len(cids))]
+                titles    = request.POST.getlist('cardset-title')
+                logging.info(mappings)
+                logging.info(templates)
+                for cid, mapping, template, title in zip(cids, mappings, templates, titles):
+                    # Check if an existing set is edited
+                    if cid.isdigit():
+                        cardset = models.Cardset.get_by_id(int(cid))
+                        if cardset is None:
+                            errors.append('Edited Cardset not found')
+                    else:
+                        cardset = models.Cardset()
+                        cardset.factsheet = factsheet
+
                     cardset.set_mapping(simplejson.loads(mapping))
                     cardset.set_title(title)
                     cardset.set_template(template)
                     cardset.put()
-                except models.CardsetError, e:
-                    errors.append('Error in Cardset "%s"(%s) : %s'%(title, cid, str(e)))
+        except (models.FactsheetError, models.CardsetError) as e:
+            errors.append(u'Error: %s'%(unicode(e)))
         if not errors:
             return HttpResponseRedirect(reverse('cardbox.views.list_view',args=[name]))
         

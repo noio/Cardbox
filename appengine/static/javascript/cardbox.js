@@ -172,10 +172,11 @@ var ListEditor = new Class({
  */
 var CardsetEditor = new Class({
   
-    initialize: function(element, listEditor){
+    initialize: function(element, listEditor, nth){
         this.element = document.id(element);
         this.listEditor = listEditor;
         //Setup all data
+        this.element.getElement('input[name=cardset-template-new]').set('name','cardset-template-'+(nth));
         this.mapping   = JSON.decode(this.element.getElement('input[name=cardset-mapping]').value);
         this.samplerow = this.listEditor.getRows().getRandom();
         if (this.currentTemplate()){
@@ -304,7 +305,7 @@ var CardsetEditor = new Class({
     },
     
     currentTemplate: function(){
-        var selected = this.element.getElement('input[name=cardset-template]:checked');
+        var selected = this.element.getElement('input[name^=cardset-template]:checked');
         if (selected){
             return selected.get('value')
         } else {

@@ -22,7 +22,7 @@
             <tbody>
             {% for row_id in list.row_order %}
             {% with list.rows|dictkey:row_id as row %}
-            <tr>
+            <tr id='r-{{row_id}}'>
                 {% for c in list.columns %}
                 <td>{{row|dictkey:c}}</td>
                 {% endfor %}

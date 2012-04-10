@@ -19,14 +19,13 @@
         </div>
         <span class='span-6' style='display:none;'>
             <div class='card-info span-6 last'></div>
-            <div id='stackview' class='cardstack span-6 last'></div>
         </span>
         
     </div>
         
     <script type='text/javascript'>
         window.addEvent('domready',function(){
-            var studyClient = new StudyClient('study-area',{{box.key.id}},{'stackview':$('stackview')});
+            var studyClient = new StudyClient('study-area',{{box.key.id}},{});
         });
     </script>
 {% endblock %}

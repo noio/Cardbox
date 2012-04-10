@@ -358,7 +358,6 @@ var StudyClient = new Class({
     Implements: [Options],
     options:{
         stacksize: 5,
-        stackview: null,
     },
     
     initialize: function(id, box_id, options){
@@ -415,7 +414,6 @@ var StudyClient = new Class({
         if (this.cardstack.length < this.options.stacksize){
             this.cardRequest.send();
         }
-        this.drawStack()
     },
     
     popCardStack: function(){
@@ -439,18 +437,7 @@ var StudyClient = new Class({
         this.currentCard.addEvent('click',this.flipCard.bind(this));
         this.flipKeyboard.activate()
     },
-    
-    drawStack: function(){
-        if(!(this.options.stackview === null)){
-            var s = $(this.options.stackview);
-            s.empty();
-            ul = new Element('ul').inject(s);
-            this.cardstack.each(function(card, idx){
-                ul.adopt(new Element('li'));
-            }.bind(this));
-        }
-    },
-    
+        
     flipCard: function(){
         if(this.currentCard === null){return;}
         

@@ -5,7 +5,6 @@ import datetime
 import logging
 import yaml
 
-
 # AppEngine Imports
 from google.appengine.ext import deferred
 from google.appengine.runtime import DeadlineExceededError
@@ -13,6 +12,9 @@ from google.appengine.ext import db
 
 # Django Imports
 from django.template import Template
+
+# Library imports
+import mapreduce as mr
 
 # Local Imports
 import models
@@ -250,7 +252,3 @@ class BoxStatsMapper(Mapper):
                                      max_interval=self.max_interval,
                                      min_interval=self.min_interval)
         stats.put()
-        
-### TASKS ###
-def task_clean_all_cards(request):
-    pass

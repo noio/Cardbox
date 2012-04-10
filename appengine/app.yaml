@@ -18,7 +18,10 @@ handlers:
 - url: /remote_api
   script: $PYTHON_LIB/google/appengine/ext/remote_api/handler.py
   login: admin
-
+  
+- url: /mapreduce(/.*)?
+  script: mapreduce/main.py
+  login: admin
 
 ### STATIC HANDLERS ###
 - url: /favicon.ico

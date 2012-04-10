@@ -372,10 +372,10 @@ class Box(db.Model):
             data = [(s.day, s.n_cards, s.n_learned, s.min_interval, s.max_interval, s.avg_interval) for s in stats]
             (dates, n_cards, n_learned, min_interval, max_interval, avg_interval) = (zip(*data) if len(data) > 0 else
                 ([],[],[],[],[],[]))
-            chart = TimelineChart(size='630x250')
+            chart = draw.TimelineChart(size='630x250')
             chart.add_line(dates, n_cards, label='Studied',color='7290A6')
             chart.add_line(dates, n_learned, label='Learned',color='94c15d')
-            interval_chart = TimelineChart(size='630x250')
+            interval_chart = draw.TimelineChart(size='630x250')
             interval_chart.add_line(dates, max_interval, label='Max Interval',color='CCC699')
             interval_chart.add_line(dates, avg_interval, label='Average Interval',color='000000')
             interval_chart.add_line(dates, min_interval, label='Min Interval',color='CCC699')
@@ -428,6 +428,11 @@ class Box(db.Model):
 
                     
 class Card(db.Model):
+    # Links
+    box     = db.ReferenceProperty(Box)
+    cardset = db.ReferenceProperty(Cardset)
+    row_id  = db.StringProperty()
+    # Props
     modified      = db.DateTimeProperty(auto_now=True)
     enabled       = db.BooleanProperty(default=True)
     in_study_set  = db.BooleanProperty(default=False)
@@ -468,9 +473,9 @@ class Card(db.Model):
         self.put()
         
     def get_cardset(self):
-        if not hasattr(self, '_cardset'):
-            self._cardset = Cardset.get_by_id(int(self.key().name().split('-',1)[0]))
-        return self._cardset
+        if not hasattr(self, '_cardset_old'):
+            self._cardset_old = Cardset.get_by_id(int(self.key().name().split('-',1)[0]))
+        return self._cardset_old
         
     def is_learned(self):
         return self.learned_until > datetime.datetime.now()
@@ -517,7 +522,11 @@ class Card(db.Model):
         return self.template().render(mode="mobile")
     
     def data(self):
-         return {'front':self.template().front_data,'back':self.template().back_data}
+        return {'front':self.template().front_data,'back':self.template().back_data}
+        
+    def factsheet_url(self):
+        pass
+        
 
 class DailyBoxStats(db.Model):
     """ Keeps track of daily stats for parent box. """
@@ -599,99 +608,7 @@ class CardTemplate(object):
     def render_error(cls, message):
         return render_to_string('cards/error.html',{'message':message})
         
-class TimelineChart(object):
-    
-    max_date_labels = 7
-    
-    def __init__(self, **kwds):
-        self.gcparams = {}
-        self.lines = []
-        self.line_fills = []
-        self.ranges = []
-        self.size = kwds.get('size','470x200')
-        self.times = set([])
-    
-    def add_line(self, times, data, label='', color='94c15d',thickness=3):
-        if len(times) > 1:
-            self.times = self.times.union(times)
-            self.lines.append({'times':times,
-                               'data':data,
-                               'label':label,
-                               'color':color,
-                               'thickness':thickness})
-    
-    def add_line_fill(self, color, start_line, end_line):
-        self.line_fills.append({'color':color,'start_line':start_line,'end_line':end_line})
-        
-    def add_range_markers(self, range_starts, range_ends):
-        self.ranges.append({'starts':range_starts,'ends':range_ends})
-        
-    def rescale_all(self, rng=100):
-        if len(self.times) > 1:
-            times = sorted(self.times)
-            first,last = times[0],times[-1]
-            scaledtimes = rescale_datetimes(times, first, last, new_range_max=rng)
-            for l in self.lines:
-                l['scaled'] = rescale_datetimes(l['times'],first, last, new_range_max=rng)
-            for r in self.ranges:
-                r['scaled'] = zip(rescale_datetimes(r['starts'],first, last, new_range_max=1),
-                                rescale_datetimes(r['ends'],first, last, new_range_max=1))
-            self.labels = []
-            self.labels.append((first, scaledtimes[0]))
-            min_distance = (last-first)/self.max_date_labels
-            for (t,s) in zip(times, scaledtimes):
-                if t > self.labels[-1][0] + min_distance:
-                    self.labels.append((t,s))
 
-    def render(self):
-        if len(self.times) < 2:
-            self.empty_chart()
-            return
-        self.rescale_all()
-        lines = [','.join(['%.1f'%t for t in l['scaled']]) + '|' + 
-                 ','.join(['%.1f'%d for d in l['data']]) 
-                    for l in self.lines]
-        lines = '|'.join(lines)
-        ranges = [['R,94c15d44,0,%s,%s'%(a,b) for (a,b) in r['scaled']] 
-                    for r in self.ranges]
-        ranges = '|'.join(ranges)
-        linefills = '|'.join(['b,%s,%d,%d,0'%(lf['color'],
-                                              lf['start_line'],
-                                              lf['end_line']) for lf in self.line_fills])
-        legend = '|'.join([l['label'] for l in self.lines])
-        colors = ','.join([l['color'] for l in self.lines])
-        linestyle = '|'.join([str(l['thickness']) for l in self.lines])
-        labels = '|'.join([l[0].strftime("%b %d %%27%y") for l in self.labels])
-        label_positions = ','.join(['%.1f'%l[1] for l in self.labels])
-        max_val = max(0.1,max([max(l['data']) for l in self.lines]))
-        ideal_spacing = (100/float(max_val)) * max(max_val//5.0,1)
-        # Set parameters
-        self.gcparams['cht']  = 'lxy'
-        self.gcparams['chxt'] = 'x,y'
-        self.gcparams['chds'] = ','.join([('0,100,0,%.0f'%(max_val)) for i in range(len(self.lines))])
-        self.gcparams['chg']  = '0,%.1f'%ideal_spacing
-        self.gcparams['chf']  = 'bg,s,65432100'
-        # Dynamic parameters
-        self.gcparams['chd']  = 't:'+lines
-        self.gcparams['chco'] = colors
-        self.gcparams['chls'] = linestyle
-        self.gcparams['chm']  = ranges + ('|' if ranges and linefills else '') + linefills
-        self.gcparams['chdl'] = legend
-        self.gcparams['chxr'] = '1,0,%.2f'%max_val
-        self.gcparams['chxl'] = '0:|'+labels
-        self.gcparams['chxp'] = '0,'+label_positions
-        
-    def empty_chart(self):
-        self.gcparams['chst'] = 'd_text_outline'
-        self.gcparams['chld'] = '8A1F11|16|h|FFFFFF|b|Generating+data.+Come+back+in+a+minute.'
-
-    def url(self):
-        self.render()
-        return ("http://chart.apis.google.com/chart?chs=%s&%s"%(self.size,
-            '&'.join(['%s=%s'%(k,v) for (k,v) in self.gcparams.items()])))
-            
-    def img(self):
-        return mark_safe("<img src='%s'/>"%self.url())
 
 ### Helper Functions ###
 
@@ -706,18 +623,7 @@ def name_to_title(name):
     return nm
     
 
-def rescale_datetimes(dates, old_range_min=None, old_range_max=None, new_range_min=0, new_range_max=1):
-    ascending = sorted(dates)
-    if old_range_min is None: 
-        old_range_min = ascending[0]
-    if old_range_max is None:
-        old_range_max = ascending[-1]
-    omn = time.mktime(old_range_min.timetuple())
-    omx = time.mktime(old_range_max.timetuple())
-    nmn,nmx = new_range_min, new_range_max
-    timestamps = map(lambda x: time.mktime(x.timetuple()), dates)
-    scaled =  map(lambda x: ((x-omn)/float(omx-omn)) * (nmx-nmn) + nmn, timestamps)
-    return scaled
+
 
 ### Generic Helper Functions
 

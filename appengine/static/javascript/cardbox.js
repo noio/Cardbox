@@ -176,7 +176,7 @@ var CardsetEditor = new Class({
         this.element = document.id(element);
         this.listEditor = listEditor;
         //Setup all data
-        this.element.getElement('input[name=cardset-template-new]').set('name','cardset-template-'+(nth));
+        this.element.getElements('input[name=cardset-template-new]').set('name','cardset-template-'+(nth));
         this.mapping   = JSON.decode(this.element.getElement('input[name=cardset-mapping]').value);
         this.samplerow = this.listEditor.getRows().getRandom();
         if (this.currentTemplate()){

@@ -32,7 +32,6 @@ body    { width: 100%;background: #f0f0f0; color: #403c3b;}
 a { color: #315875; text-decoration: none;}
 a:hover { color: #000000;}
 
-li      {padding: 10px 0; list-style: none;}
 /*ELEMENTS*/
 h1 {margin-bottom: 0;}
 #logo         { display: block; text-indent: -9999px; height: 60px; width: 100%;
@@ -47,6 +46,7 @@ h3 .perc  { float: right; }
 
 .card     { margin: 10px;}
 
-.buttons li {text-align: center;}
+.buttons { font-size: 20px; }
+.buttons li { padding: 5px 0; list-style: none; text-align: center;}
 .buttons .correct {border-left: 6px solid #00DA55; background: #B3EAC9;}
 .buttons .wrong {border-left: 6px solid #EC3319; background: #EFC0BA;}
